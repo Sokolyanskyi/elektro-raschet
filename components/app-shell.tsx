@@ -12,12 +12,12 @@ import {
   formatMoneyPlain,
   formatNumber,
   monthLabel,
-  pluralRu,
   todayISO,
   yearOf,
 } from "@/lib/format";
 import type { MeterRecord, RecordDraft, Settings } from "@/lib/types";
 import { History } from "./history";
+import { useI18n } from "./i18n-provider";
 import {
   BoltIcon,
   CloudIcon,
@@ -50,6 +50,7 @@ interface ToastState {
 }
 
 export function AppShell() {
+  const { locale, t } = useI18n();
   const store = useRecords();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | "all">(new Date().getFullYear());
@@ -142,7 +143,7 @@ export function AppShell() {
 
   const beginEdit = (record: MeterRecord) => {
     if (record.paid) {
-      notify("Расчёт оплачен. Сначала отмените оплату в истории.", "error");
+      notify(t("toast.editPaid"), "error");
       return;
     }
     setEditingId(record.id);
@@ -154,9 +155,9 @@ export function AppShell() {
   const markPaid = async (record: MeterRecord) => {
     try {
       await store.setPaid(record.id, true);
-      notify(`Оплата за ${monthLabel(record.period)} отмечена — дата сохранена`);
+      notify(t("toast.paid", { month: monthLabel(record.period, locale) }));
     } catch (cause) {
-      notify(cause instanceof Error ? cause.message : "Не удалось отметить оплату", "error");
+      notify(cause instanceof Error ? cause.message : t("toast.paidError"), "error");
     }
   };
 
@@ -166,21 +167,28 @@ export function AppShell() {
       if (confirm.kind === "delete") {
         await store.remove(confirm.record.id);
         if (editingId === confirm.record.id) setEditingId(null);
-        notify(`Расчёт за ${monthLabel(confirm.record.period)} удалён`);
+        notify(t("toast.deleted", { month: monthLabel(confirm.record.period, locale) }));
       } else if (confirm.kind === "unlock") {
         await store.setPaid(confirm.record.id, false);
-        notify(`Оплата за ${monthLabel(confirm.record.period)} отменена — расчёт разблокирован`);
+        notify(t("toast.unlocked", { month: monthLabel(confirm.record.period, locale) }));
       } else {
         const result = await store.importRecords(confirm.records, confirm.settings);
         notify(
-          `Импорт завершён: добавлено ${result.added}, обновлено ${result.updated}${
-            result.skipped ? `, пропущено ${result.skipped}` : ""
-          }`,
+          result.skipped
+            ? t("toast.importDone", {
+                added: result.added,
+                updated: result.updated,
+                skipped: result.skipped,
+              })
+            : t("toast.importDoneClean", {
+                added: result.added,
+                updated: result.updated,
+              }),
         );
       }
       setConfirm(null);
     } catch (cause) {
-      notify(cause instanceof Error ? cause.message : "Не удалось выполнить действие", "error");
+      notify(cause instanceof Error ? cause.message : t("toast.actionFailed"), "error");
     }
   };
 
@@ -193,57 +201,57 @@ export function AppShell() {
       records: store.records,
     };
     downloadJson(`elektro-raschet-${todayISO()}.json`, payload);
-    notify("Резервная копия скачана");
+    notify(t("toast.backupDownloaded"));
   };
 
   const handleExportCsv = () => {
     const rows: (string | number)[][] = [
       [
-        "Расчётный месяц",
-        "Период",
-        "День: прошлый",
-        "День: этот",
-        "День: кВт·ч",
-        "Тариф день",
-        "День: сумма",
-        "Ночь: прошлый",
-        "Ночь: этот",
-        "Ночь: кВт·ч",
-        "Тариф ночь",
-        "Ночь: сумма",
-        "Итого",
-        "Дата внесения",
-        "Оплачено",
-        "Дата оплаты",
-        "Комментарий",
+        t("csv.month"),
+        t("csv.period"),
+        t("csv.dayPrev"),
+        t("csv.dayCurr"),
+        t("csv.dayKwh"),
+        t("csv.dayRate"),
+        t("csv.daySum"),
+        t("csv.nightPrev"),
+        t("csv.nightCurr"),
+        t("csv.nightKwh"),
+        t("csv.nightRate"),
+        t("csv.nightSum"),
+        t("csv.total"),
+        t("csv.enteredAt"),
+        t("csv.paid"),
+        t("csv.paidAt"),
+        t("csv.note"),
       ],
     ];
 
     for (const record of store.records) {
       const usage = calculateUsage(record);
       rows.push([
-        monthLabel(record.period),
+        monthLabel(record.period, locale),
         record.period,
-        formatNumber(record.dayPrev),
-        formatNumber(record.dayCurr),
-        formatNumber(usage.dayUsage),
-        formatNumber(record.dayRate),
-        formatMoneyPlain(usage.dayCost),
-        formatNumber(record.nightPrev),
-        formatNumber(record.nightCurr),
-        formatNumber(usage.nightUsage),
-        formatNumber(record.nightRate),
-        formatMoneyPlain(usage.nightCost),
-        formatMoneyPlain(usage.total),
+        formatNumber(record.dayPrev, locale),
+        formatNumber(record.dayCurr, locale),
+        formatNumber(usage.dayUsage, locale),
+        formatNumber(record.dayRate, locale),
+        formatMoneyPlain(usage.dayCost, locale),
+        formatNumber(record.nightPrev, locale),
+        formatNumber(record.nightCurr, locale),
+        formatNumber(usage.nightUsage, locale),
+        formatNumber(record.nightRate, locale),
+        formatMoneyPlain(usage.nightCost, locale),
+        formatMoneyPlain(usage.total, locale),
         record.enteredAt,
-        record.paid ? "Да" : "Нет",
+        record.paid ? t("common.yes") : t("common.no"),
         record.paidAt ?? "",
         record.note ?? "",
       ]);
     }
 
     downloadCsv(`elektro-raschet-${todayISO()}.csv`, rows);
-    notify("Таблица CSV скачана");
+    notify(t("toast.csvDownloaded"));
   };
 
   const handleImportFile = async (file: File) => {
@@ -251,7 +259,7 @@ export function AppShell() {
       const raw = await readJsonFile(file);
       const parsed = parseBackup(raw);
       if (parsed.records.length === 0) {
-        notify("В файле не найдено корректных расчётов", "error");
+        notify(t("toast.noValidRecords"), "error");
         return;
       }
       setConfirm({
@@ -261,16 +269,16 @@ export function AppShell() {
         skipped: parsed.skipped,
       });
     } catch {
-      notify("Не удалось прочитать файл. Выберите JSON из резервной копии.", "error");
+      notify(t("toast.readFileFailed"), "error");
     }
   };
 
   const pushLocal = async () => {
     try {
       const result = await store.pushLocalToCloud();
-      notify(`Перенесено: добавлено ${result.added}, обновлено ${result.updated}`);
+      notify(t("toast.moved", { added: result.added, updated: result.updated }));
     } catch (cause) {
-      notify(cause instanceof Error ? cause.message : "Не удалось перенести данные", "error");
+      notify(cause instanceof Error ? cause.message : t("toast.moveFailed"), "error");
     }
   };
 
@@ -278,9 +286,9 @@ export function AppShell() {
     try {
       await store.signOut();
       setEditingId(null);
-      notify("Вы вышли из облака");
+      notify(t("toast.signedOut"));
     } catch (cause) {
-      notify(cause instanceof Error ? cause.message : "Не удалось выйти", "error");
+      notify(cause instanceof Error ? cause.message : t("toast.signOutFailed"), "error");
     }
   };
 
@@ -297,7 +305,7 @@ export function AppShell() {
         <span className="brand-mark brand-mark-lg">
           <BoltIcon width={26} height={26} />
         </span>
-        <p>Загружаем расчёты…</p>
+        <p>{t("boot.loading")}</p>
       </div>
     );
   }
@@ -313,14 +321,14 @@ export function AppShell() {
           <span className="brand-mark brand-mark-lg">
             <BoltIcon width={26} height={26} />
           </span>
-          <h1>Не удалось загрузить данные</h1>
+          <h1>{t("error.loadTitle")}</h1>
           <p>{store.error}</p>
           <div className="boot-actions">
             <button type="button" className="btn btn-primary" onClick={() => void store.refresh()}>
-              Повторить
+              {t("error.retry")}
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => setSettingsOpen(true)}>
-              Настройки
+              {t("error.settings")}
             </button>
           </div>
         </div>
@@ -345,27 +353,22 @@ export function AppShell() {
 
   const confirmTitle =
     confirm?.kind === "delete"
-      ? "Удалить расчёт?"
+      ? t("confirm.deleteTitle")
       : confirm?.kind === "unlock"
-        ? "Отменить оплату?"
-        : "Импортировать данные?";
+        ? t("confirm.unlockTitle")
+        : t("confirm.importTitle");
 
   const confirmMessage =
     confirm?.kind === "delete" ? (
-      <>
-        Расчёт за <b>{monthLabel(confirm.record.period)}</b> будет удалён безвозвратно.
-        Резервная копия позволит восстановить его.
-      </>
+      t("confirm.deleteText", { month: monthLabel(confirm.record.period, locale) })
     ) : confirm?.kind === "unlock" ? (
-      <>
-        Отметка об оплате за <b>{monthLabel(confirm.record.period)}</b> будет снята, дата
-        оплаты удалится, а расчёт снова станет доступен для изменения.
-      </>
+      t("confirm.unlockText", { month: monthLabel(confirm.record.period, locale) })
     ) : confirm?.kind === "import" ? (
       <>
-        Будет добавлено или обновлено <b>{confirm.records.length}</b> расчётов.
-        {confirm.skipped > 0 ? ` Пропущено некорректных строк: ${confirm.skipped}.` : ""}{" "}
-        Существующие месяцы из файла обновятся, остальные записи сохранятся.
+        {t("confirm.importText", { count: confirm.records.length })}
+        {confirm.skipped > 0
+          ? ` ${t("confirm.importSkipped", { count: confirm.skipped })}`
+          : ""}
       </>
     ) : null;
 
@@ -373,13 +376,13 @@ export function AppShell() {
     <>
       <div className="page" id="top">
         <header className="topbar">
-          <a className="brand" href="#top" aria-label="На главную">
+          <a className="brand" href="#top" aria-label={t("app.home")}>
             <span className="brand-mark">
               <BoltIcon width={20} height={20} />
             </span>
             <span className="brand-text">
-              <b>Электроэнергия</b>
-              <small>расчёт и оплата по двум тарифам</small>
+              <b>{t("app.name")}</b>
+              <small>{t("app.tagline")}</small>
             </span>
           </a>
 
@@ -390,12 +393,12 @@ export function AppShell() {
               ) : (
                 <DeviceIcon width={15} height={15} />
               )}
-              {store.mode === "cloud" ? "Облако" : "Это устройство"}
+              {store.mode === "cloud" ? t("header.cloud") : t("header.local")}
             </span>
             <button
               type="button"
               className="icon-btn"
-              aria-label="Настройки"
+              aria-label={t("common.settings")}
               onClick={() => setSettingsOpen(true)}
             >
               <GearIcon />
@@ -406,68 +409,59 @@ export function AppShell() {
         <main>
           <section className="hero">
             <div className="hero-copy">
-              <p className="eyebrow">Личный учёт · {monthLabel(currentPeriod())}</p>
-              <h1>
-                Свет посчитан.
-                <br />
-                <span>История сохранена.</span>
-              </h1>
-              <p className="hero-sub">
-                Внесите показания за день и ночь — сумма посчитается автоматически.
-                Отметьте оплату, и приложение запомнит дату навсегда.
+              <p className="eyebrow">
+                {t("hero.eyebrow", { month: monthLabel(currentPeriod(), locale) })}
               </p>
+              <h1>
+                {t("hero.title1")}
+                <br />
+                <span>{t("hero.title2")}</span>
+              </h1>
+              <p className="hero-sub">{t("hero.subtitle")}</p>
               <div className="rate-chips">
                 <span className="rate-chip rate-chip-day">
                   <SunIcon width={16} height={16} />
-                  День <b>{formatNumber(store.settings.dayRate)} ₴</b>
+                  {t("common.day")} <b>{formatNumber(store.settings.dayRate, locale)} ₴</b>
                 </span>
                 <span className="rate-chip rate-chip-night">
                   <MoonIcon width={16} height={16} />
-                  Ночь <b>{formatNumber(store.settings.nightRate)} ₴</b>
+                  {t("common.night")} <b>{formatNumber(store.settings.nightRate, locale)} ₴</b>
                 </span>
                 <button
                   type="button"
                   className="link-btn"
                   onClick={() => setSettingsOpen(true)}
                 >
-                  изменить
+                  {t("hero.changeRate")}
                 </button>
               </div>
             </div>
 
             <div className="stats">
               <div className={`stat ${stats.debt > 0 ? "stat-debt" : "stat-clear"}`}>
-                <span className="stat-label">К оплате</span>
-                <b className="stat-value">{formatMoney(stats.debt)}</b>
+                <span className="stat-label">{t("stats.toPay")}</span>
+                <b className="stat-value">{formatMoney(stats.debt, locale)}</b>
                 <span className="stat-sub">
                   {stats.unpaidCount > 0
-                    ? `${stats.unpaidCount} ${pluralRu(
-                        stats.unpaidCount,
-                        "неоплаченный",
-                        "неоплаченных",
-                        "неоплаченных",
-                      )}`
-                    : "всё оплачено"}
+                    ? t("stats.unpaid", { count: stats.unpaidCount })
+                    : t("stats.allPaid")}
                 </span>
               </div>
               <div className="stat">
-                <span className="stat-label">Оплачено за {currentYear}</span>
-                <b className="stat-value">{formatMoney(stats.paidYear)}</b>
+                <span className="stat-label">{t("stats.paidForYear", { year: currentYear })}</span>
+                <b className="stat-value">{formatMoney(stats.paidYear, locale)}</b>
                 <span className="stat-sub">
                   {stats.paidCount > 0
-                    ? `${stats.paidCount} ${pluralRu(
-                        stats.paidCount,
-                        "платёж",
-                        "платежа",
-                        "платежей",
-                      )}`
-                    : "пока нет платежей"}
+                    ? t("stats.payments", { count: stats.paidCount })
+                    : t("stats.noPayments")}
                 </span>
               </div>
               <div className="stat">
-                <span className="stat-label">Расход за {currentYear}</span>
-                <b className="stat-value">{formatNumber(stats.usageYear)}</b>
-                <span className="stat-sub">кВт·ч · {stats.recordsYear} мес.</span>
+                <span className="stat-label">{t("stats.usageForYear", { year: currentYear })}</span>
+                <b className="stat-value">{formatNumber(stats.usageYear, locale)}</b>
+                <span className="stat-sub">
+                  {t("stats.usageSub", { count: stats.recordsYear })}
+                </span>
               </div>
             </div>
           </section>
@@ -478,18 +472,15 @@ export function AppShell() {
                 <DeviceIcon width={20} height={20} />
               </span>
               <div>
-                <b>Данные хранятся только в этом браузере</b>
-                <p>
-                  Чтобы открывать историю с телефона и компьютера, включите бесплатное
-                  облако — настройка за пару минут. Инструкция в настройках.
-                </p>
+                <b>{t("banner.localTitle")}</b>
+                <p>{t("banner.localText")}</p>
               </div>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={() => setSettingsOpen(true)}
               >
-                Настроить
+                {t("banner.configure")}
               </button>
             </div>
           ) : null}
@@ -510,13 +501,13 @@ export function AppShell() {
             <aside className="side-column">
               <div className="card side-card">
                 <div className="side-head">
-                  <span>Ваши тарифы</span>
+                  <span>{t("side.ratesTitle")}</span>
                   <button
                     type="button"
                     className="link-btn"
                     onClick={() => setSettingsOpen(true)}
                   >
-                    Изменить
+                    {t("common.change")}
                   </button>
                 </div>
                 <div className="side-rate side-rate-day">
@@ -524,45 +515,45 @@ export function AppShell() {
                     <SunIcon width={18} height={18} />
                   </span>
                   <div>
-                    <span>День</span>
-                    <small>с 07:00 до 23:00</small>
+                    <span>{t("common.day")}</span>
+                    <small>{t("side.dayHours")}</small>
                   </div>
-                  <b>{formatMoney(store.settings.dayRate)}</b>
+                  <b>{formatMoney(store.settings.dayRate, locale)}</b>
                 </div>
                 <div className="side-rate side-rate-night">
                   <span className="tariff-icon tariff-night">
                     <MoonIcon width={18} height={18} />
                   </span>
                   <div>
-                    <span>Ночь</span>
-                    <small>с 23:00 до 07:00</small>
+                    <span>{t("common.night")}</span>
+                    <small>{t("side.nightHours")}</small>
                   </div>
-                  <b>{formatMoney(store.settings.nightRate)}</b>
+                  <b>{formatMoney(store.settings.nightRate, locale)}</b>
                 </div>
-                <p className="side-note">Цена за 1 кВт·ч для новых расчётов.</p>
+                <p className="side-note">{t("side.rateNote")}</p>
               </div>
 
               {latest && latestUsage ? (
                 <div className="card side-card">
                   <div className="side-head">
-                    <span>Последний расчёт</span>
+                    <span>{t("side.lastTitle")}</span>
                     <button
                       type="button"
                       className="link-btn"
                       onClick={() => openHistoryFor(latest)}
                     >
-                      В историю
+                      {t("side.toHistory")}
                     </button>
                   </div>
                   <div className="latest-month">
-                    <b>{monthLabel(latest.period)}</b>
+                    <b>{monthLabel(latest.period, locale)}</b>
                     <span className={`status ${latest.paid ? "status-paid" : "status-unpaid"}`}>
-                      {latest.paid ? "Оплачено" : "Не оплачено"}
+                      {latest.paid ? t("side.statusPaid") : t("side.statusUnpaid")}
                     </span>
                   </div>
                   <div className="latest-sum">
-                    <strong>{formatMoney(latestUsage.total)}</strong>
-                    <span>{formatKwh(latestUsage.totalUsage)}</span>
+                    <strong>{formatMoney(latestUsage.total, locale)}</strong>
+                    <span>{formatKwh(latestUsage.totalUsage, locale)}</span>
                   </div>
                   <button
                     type="button"
@@ -570,7 +561,7 @@ export function AppShell() {
                     onClick={() => beginEdit(latest)}
                     disabled={latest.paid}
                   >
-                    {latest.paid ? "Расчёт оплачен" : "Изменить показания"}
+                    {latest.paid ? t("side.recordPaid") : t("side.editReadings")}
                   </button>
                 </div>
               ) : (
@@ -578,8 +569,8 @@ export function AppShell() {
                   <span className="side-empty-icon">
                     <BoltIcon width={20} height={20} />
                   </span>
-                  <b>История пока пуста</b>
-                  <p>Первый расчёт появится здесь и будет храниться годами.</p>
+                  <b>{t("side.emptyTitle")}</b>
+                  <p>{t("side.emptyText")}</p>
                 </div>
               )}
 
@@ -588,11 +579,11 @@ export function AppShell() {
                   <ShieldIcon width={19} height={19} />
                 </span>
                 <div>
-                  <b>{store.mode === "cloud" ? "Синхронизация включена" : "Ваши данные — только ваши"}</b>
+                  <b>{store.mode === "cloud" ? t("side.syncTitle") : t("side.privacyTitle")}</b>
                   <p>
                     {store.mode === "cloud"
-                      ? "Телефон и компьютер видят одну историю. Вход защищён PIN-кодом."
-                      : "Показания не отправляются энергопоставщику. Скачайте резервную копию в настройках."}
+                      ? t("side.syncText")
+                      : t("side.privacyText")}
                   </p>
                 </div>
               </div>
@@ -615,11 +606,16 @@ export function AppShell() {
         <footer className="footer">
           <div>
             <BoltIcon width={15} height={15} />
-            <span>Личный расчёт электроэнергии · {formatNumber(store.settings.dayRate)} / {formatNumber(store.settings.nightRate)} ₴ за кВт·ч</span>
+            <span>
+              {t("footer.summary", {
+                day: formatNumber(store.settings.dayRate, locale),
+                night: formatNumber(store.settings.nightRate, locale),
+              })}
+            </span>
           </div>
           <button type="button" className="link-btn" onClick={() => setSettingsOpen(true)}>
             <WalletIcon width={14} height={14} />
-            Настройки и резервная копия
+            {t("footer.settings")}
           </button>
         </footer>
       </div>
@@ -630,7 +626,7 @@ export function AppShell() {
         settings={store.settings}
         onSaveSettings={(next) => {
           store.updateSettings(next);
-          notify("Тарифы по умолчанию обновлены");
+          notify(t("toast.ratesUpdated"));
         }}
         mode={store.mode}
         cloud={store.cloud}
@@ -649,10 +645,10 @@ export function AppShell() {
         message={confirmMessage}
         confirmLabel={
           confirm?.kind === "delete"
-            ? "Удалить"
+            ? t("confirm.deleteAction")
             : confirm?.kind === "unlock"
-              ? "Снять оплату"
-              : "Импортировать"
+              ? t("confirm.unlockAction")
+              : t("confirm.importAction")
         }
         danger={confirm?.kind === "delete"}
         busy={store.busy}

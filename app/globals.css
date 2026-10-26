@@ -831,6 +831,22 @@ a {
   font-weight: 600;
 }
 
+.month-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.month-picker select {
+  appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a94ab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 15px;
+  cursor: pointer;
+}
+
 .input-with-icon {
   position: relative;
 }
@@ -2190,6 +2206,61 @@ a {
 .settings-actions {
   display: flex;
   justify-content: flex-start;
+}
+
+.language-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
+  gap: 6px;
+}
+
+.language-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 9px 32px 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.language-option:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+
+.language-option.is-active {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  box-shadow: 0 0 0 1px var(--brand) inset;
+}
+
+.language-native {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.language-option small {
+  font-size: 9.5px;
+  line-height: 1.3;
+  color: var(--muted-2);
+}
+
+.language-option > svg {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  color: var(--brand);
+  transform: translateY(-50%);
 }
 
 .storage-card {

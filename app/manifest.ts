@@ -2,16 +2,16 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Электроэнергия — расчёт и оплата",
-    short_name: "Электроэнергия",
+    name: "Electricity — meter readings & payments",
+    short_name: "Electricity",
     description:
-      "Расчёт оплаты за электроэнергию по дневному и ночному тарифам. История показаний и оплат.",
+      "Personal electricity bill calculator for day and night tariffs with multi-year reading and payment history.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait-primary",
     background_color: "#f3f5fb",
     theme_color: "#1e1b4b",
-    lang: "ru",
+    lang: "en",
     categories: ["utilities", "finance"],
     icons: [
       {

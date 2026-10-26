@@ -1,12 +1,15 @@
+import { apiErrorMessage, tNow } from "@/lib/i18n";
 import type { CloudStatus, MeterRecord } from "@/lib/types";
 
 export class ApiError extends Error {
   status: number;
+  code: string | null;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code: string | null = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -22,18 +25,24 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
       cache: "no-store",
     });
   } catch {
-    throw new ApiError(0, "Нет связи с сервером. Проверьте интернет.");
+    throw new ApiError(0, tNow("api.network"), "network");
   }
 
   const payload = (await response.json().catch(() => ({}))) as {
     error?: string;
+    code?: string;
     message?: string;
   } & Record<string, unknown>;
 
   if (!response.ok) {
+    const code = payload.error ?? payload.code ?? null;
+    if (code && code.startsWith("api.")) {
+      throw new ApiError(response.status, apiErrorMessage(code.slice(4)), code);
+    }
     throw new ApiError(
       response.status,
-      payload.error || payload.message || "Не удалось выполнить запрос",
+      code ? apiErrorMessage(code) : tNow("api.request_failed"),
+      code,
     );
   }
 

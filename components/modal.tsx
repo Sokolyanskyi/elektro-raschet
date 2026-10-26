@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { useI18n } from "./i18n-provider";
 import { XIcon } from "./icons";
 
 interface ModalProps {
@@ -13,6 +14,7 @@ interface ModalProps {
 }
 
 export function Modal({ open, title, onClose, children, footer, size = "normal" }: ModalProps) {
+  const { t } = useI18n();
   useEffect(() => {
     if (!open) return;
     const handleKey = (event: KeyboardEvent) => {
@@ -44,7 +46,12 @@ export function Modal({ open, title, onClose, children, footer, size = "normal" 
       >
         <div className="modal-head">
           <h2>{title}</h2>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Закрыть">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={onClose}
+            aria-label={t("common.close")}
+          >
             <XIcon />
           </button>
         </div>
@@ -71,13 +78,16 @@ export function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = "Подтвердить",
-  cancelLabel = "Отмена",
+  confirmLabel,
+  cancelLabel,
   danger = false,
   busy = false,
   onConfirm,
   onClose,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
+  const confirmText = confirmLabel ?? t("common.confirm");
+  const cancelText = cancelLabel ?? t("common.cancel");
   return (
     <Modal
       open={open}
@@ -86,7 +96,7 @@ export function ConfirmDialog({
       footer={
         <>
           <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>
-            {cancelLabel}
+            {cancelText}
           </button>
           <button
             type="button"
@@ -94,7 +104,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             disabled={busy}
           >
-            {busy ? "Подождите…" : confirmLabel}
+            {busy ? t("common.wait") : confirmText}
           </button>
         </>
       }

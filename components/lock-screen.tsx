@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useI18n } from "./i18n-provider";
 import { BoltIcon, LockIcon } from "./icons";
 
 interface LockScreenProps {
@@ -8,6 +9,7 @@ interface LockScreenProps {
 }
 
 export function LockScreen({ onSignIn }: LockScreenProps) {
+  const { t } = useI18n();
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -15,7 +17,7 @@ export function LockScreen({ onSignIn }: LockScreenProps) {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!pin.trim()) {
-      setError("Введите PIN-код");
+      setError(t("lock.enterPin"));
       return;
     }
     setSubmitting(true);
@@ -23,7 +25,7 @@ export function LockScreen({ onSignIn }: LockScreenProps) {
     try {
       await onSignIn(pin.trim());
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Не удалось войти");
+      setError(cause instanceof Error ? cause.message : t("lock.fallback"));
     } finally {
       setSubmitting(false);
     }
@@ -35,15 +37,13 @@ export function LockScreen({ onSignIn }: LockScreenProps) {
         <span className="brand-mark brand-mark-lg">
           <BoltIcon width={26} height={26} />
         </span>
-        <p className="eyebrow">Личный кабинет</p>
-        <h1>Электроэнергия</h1>
-        <p className="lock-sub">
-          Введите PIN-код, чтобы открыть расчёты и историю оплат на этом устройстве.
-        </p>
+        <p className="eyebrow">{t("lock.eyebrow")}</p>
+        <h1>{t("app.name")}</h1>
+        <p className="lock-sub">{t("lock.subtitle")}</p>
 
         <form onSubmit={handleSubmit} className="lock-form">
           <label htmlFor="pin" className="sr-only">
-            PIN-код
+            {t("lock.pinLabel")}
           </label>
           <div className="input-with-icon">
             <LockIcon width={18} height={18} />
@@ -53,7 +53,7 @@ export function LockScreen({ onSignIn }: LockScreenProps) {
               type="password"
               inputMode="numeric"
               autoComplete="current-password"
-              placeholder="PIN-код"
+              placeholder={t("lock.pinPlaceholder")}
               value={pin}
               onChange={(event) => setPin(event.target.value)}
               autoFocus
@@ -61,13 +61,14 @@ export function LockScreen({ onSignIn }: LockScreenProps) {
           </div>
           {error ? <p className="field-error">{error}</p> : null}
           <button type="submit" className="btn btn-primary btn-lg" disabled={submitting}>
-            {submitting ? "Проверяем…" : "Войти"}
+            {submitting ? t("lock.checking") : t("lock.submit")}
           </button>
         </form>
 
         <p className="lock-hint">
-          PIN-код задаётся владельцем приложения в переменной <code>APP_PIN</code> на Vercel.
-          Сессия сохраняется на 120 дней.
+          {t("lock.hintBefore")}
+          <code>APP_PIN</code>
+          {t("lock.hintAfter")}
         </p>
       </div>
     </main>

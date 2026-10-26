@@ -3,11 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { parseNumber } from "@/lib/calc";
 import { toInputValue } from "@/lib/format";
+import { LOCALES, LOCALE_META } from "@/lib/i18n";
 import type { CloudStatus, Settings, StorageMode } from "@/lib/types";
+import { useI18n } from "./i18n-provider";
 import {
+  CheckIcon,
   CloudIcon,
   DeviceIcon,
   DownloadIcon,
+  GlobeIcon,
   ShieldIcon,
   UploadIcon,
   WalletIcon,
@@ -45,23 +49,24 @@ export function SettingsDialog({
   onPushLocal,
   onSignOut,
 }: SettingsDialogProps) {
-  const [dayRate, setDayRate] = useState(toInputValue(settings.dayRate));
-  const [nightRate, setNightRate] = useState(toInputValue(settings.nightRate));
+  const { locale, setLocale, t } = useI18n();
+  const [dayRate, setDayRate] = useState(toInputValue(settings.dayRate, locale));
+  const [nightRate, setNightRate] = useState(toInputValue(settings.nightRate, locale));
   const [rateError, setRateError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    setDayRate(toInputValue(settings.dayRate));
-    setNightRate(toInputValue(settings.nightRate));
+    setDayRate(toInputValue(settings.dayRate, locale));
+    setNightRate(toInputValue(settings.nightRate, locale));
     setRateError(null);
-  }, [open, settings]);
+  }, [open, settings, locale]);
 
   const saveRates = () => {
     const day = parseNumber(dayRate);
     const night = parseNumber(nightRate);
     if (day === null || night === null || day <= 0 || night <= 0) {
-      setRateError("Укажите положительные значения тарифов");
+      setRateError(t("settings.rateError"));
       return;
     }
     onSaveSettings({ dayRate: day, nightRate: night });
@@ -70,18 +75,53 @@ export function SettingsDialog({
   };
 
   return (
-    <Modal open={open} title="Настройки" onClose={onClose} size="wide">
+    <Modal open={open} title={t("settings.title")} onClose={onClose} size="wide">
+      <div className="settings-section">
+        <div className="settings-title">
+          <GlobeIcon width={18} height={18} />
+          <div>
+            <h3>{t("settings.languageTitle")}</h3>
+            <p>{t("settings.languageText")}</p>
+          </div>
+        </div>
+        <div
+          className="language-options"
+          role="radiogroup"
+          aria-label={t("settings.languageTitle")}
+        >
+          {LOCALES.map((code) => {
+            const meta = LOCALE_META[code];
+            const active = locale === code;
+            return (
+              <button
+                key={code}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                className={`language-option ${active ? "is-active" : ""}`}
+                onClick={() => setLocale(code)}
+                lang={meta.htmlLang}
+              >
+                <span className="language-native">{meta.nativeName}</span>
+                <small>{meta.englishName}</small>
+                {active ? <CheckIcon width={14} height={14} /> : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="settings-section">
         <div className="settings-title">
           <WalletIcon width={18} height={18} />
           <div>
-            <h3>Тарифы по умолчанию</h3>
-            <p>Подставляются в новые расчёты. В сохранённых месяцах цены не меняются.</p>
+            <h3>{t("settings.ratesTitle")}</h3>
+            <p>{t("settings.ratesText")}</p>
           </div>
         </div>
         <div className="rates-grid">
           <div className="field">
-            <label htmlFor="settingsDayRate">День, ₴/кВт·ч</label>
+            <label htmlFor="settingsDayRate">{t("settings.dayRateLabel")}</label>
             <div className="input-with-unit">
               <input
                 id="settingsDayRate"
@@ -95,7 +135,7 @@ export function SettingsDialog({
             </div>
           </div>
           <div className="field">
-            <label htmlFor="settingsNightRate">Ночь, ₴/кВт·ч</label>
+            <label htmlFor="settingsNightRate">{t("settings.nightRateLabel")}</label>
             <div className="input-with-unit">
               <input
                 id="settingsNightRate"
@@ -112,7 +152,7 @@ export function SettingsDialog({
         {rateError ? <p className="field-error">{rateError}</p> : null}
         <div className="settings-actions">
           <button type="button" className="btn btn-primary btn-sm" onClick={saveRates}>
-            Сохранить тарифы
+            {t("settings.saveRates")}
           </button>
         </div>
       </div>
@@ -125,11 +165,11 @@ export function SettingsDialog({
             <DeviceIcon width={18} height={18} />
           )}
           <div>
-            <h3>Хранение данных</h3>
+            <h3>{t("settings.storageTitle")}</h3>
             <p>
               {mode === "cloud"
-                ? "Расчёты синхронизируются между телефоном и компьютером."
-                : "Расчёты сохраняются только в этом браузере."}
+                ? t("settings.storageCloudText")
+                : t("settings.storageLocalText")}
             </p>
           </div>
         </div>
@@ -138,13 +178,12 @@ export function SettingsDialog({
           <div className="storage-card is-cloud">
             <div className="storage-card-head">
               <span className="storage-dot" />
-              <b>Облако подключено</b>
-              {cloud?.pinRequired ? <span className="tag">PIN-защита</span> : null}
+              <b>{t("settings.cloudConnected")}</b>
+              {cloud?.pinRequired ? (
+                <span className="tag">{t("settings.pinProtection")}</span>
+              ) : null}
             </div>
-            <p>
-              Данные доступны на любом устройстве после ввода PIN-кода. История хранится,
-              пока существует облачная база.
-            </p>
+            <p>{t("settings.cloudText")}</p>
             <div className="storage-actions">
               {localCount > 0 ? (
                 <button
@@ -154,7 +193,7 @@ export function SettingsDialog({
                   disabled={busy}
                 >
                   <UploadIcon width={16} height={16} />
-                  Перенести {localCount} с этого устройства
+                  {t("settings.pushLocal", { count: localCount })}
                 </button>
               ) : null}
               <button
@@ -163,7 +202,7 @@ export function SettingsDialog({
                 onClick={onSignOut}
                 disabled={busy}
               >
-                Выйти из облака
+                {t("settings.signOut")}
               </button>
             </div>
           </div>
@@ -171,20 +210,16 @@ export function SettingsDialog({
           <div className="storage-card is-local">
             <div className="storage-card-head">
               <span className="storage-dot" />
-              <b>Локальное хранение</b>
+              <b>{t("settings.localTitle")}</b>
             </div>
-            <p>
-              Записи не пропадут при обновлении страницы, но не появятся на другом
-              устройстве и могут быть потеряны при очистке данных браузера. Скачайте
-              резервную копию перед экспериментами.
-            </p>
+            <p>{t("settings.localText")}</p>
             <div className="setup-box">
-              <b>Как включить синхронизацию</b>
+              <b>{t("settings.setupTitle")}</b>
               <ol>
-                <li>В Vercel откройте проект → Storage → Marketplace → Upstash Redis (free).</li>
-                <li>Подключите базу к проекту: появятся KV_REST_API_URL и KV_REST_API_TOKEN.</li>
-                <li>Добавьте переменную APP_PIN — код для входа в приложение.</li>
-                <li>Передеплойте проект: приложение само перейдёт в облачный режим.</li>
+                <li>{t("settings.setupStep1")}</li>
+                <li>{t("settings.setupStep2")}</li>
+                <li>{t("settings.setupStep3")}</li>
+                <li>{t("settings.setupStep4")}</li>
               </ol>
             </div>
           </div>
@@ -195,18 +230,18 @@ export function SettingsDialog({
         <div className="settings-title">
           <ShieldIcon width={18} height={18} />
           <div>
-            <h3>Резервная копия</h3>
-            <p>Файл JSON можно хранить отдельно и восстановить данные в любой момент.</p>
+            <h3>{t("settings.backupTitle")}</h3>
+            <p>{t("settings.backupText")}</p>
           </div>
         </div>
         <div className="backup-actions">
           <button type="button" className="btn btn-secondary btn-sm" onClick={onExportJson}>
             <DownloadIcon width={16} height={16} />
-            Скачать JSON
+            {t("settings.exportJson")}
           </button>
           <button type="button" className="btn btn-secondary btn-sm" onClick={onExportCsv}>
             <DownloadIcon width={16} height={16} />
-            Скачать CSV
+            {t("settings.exportCsv")}
           </button>
           <button
             type="button"
@@ -215,7 +250,7 @@ export function SettingsDialog({
             disabled={busy}
           >
             <UploadIcon width={16} height={16} />
-            Импорт JSON
+            {t("settings.importJson")}
           </button>
           <input
             ref={fileInput}
@@ -229,15 +264,12 @@ export function SettingsDialog({
             }}
           />
         </div>
-        <p className="settings-note">
-          Импорт добавляет недостающие месяцы и обновляет совпадающие по месяцу записи.
-          Записи, которых нет в файле, остаются на месте.
-        </p>
+        <p className="settings-note">{t("settings.importNote")}</p>
       </div>
 
       <div className="settings-about">
-        <p>Расчёт по двум тарифам · версия 1.0</p>
-        <p>Приложение не отправляет показания энергопоставщику — это личный учёт.</p>
+        <p>{t("settings.aboutVersion")}</p>
+        <p>{t("settings.aboutDisclaimer")}</p>
       </div>
     </Modal>
   );

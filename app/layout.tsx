@@ -1,19 +1,20 @@
 import type { Metadata, Viewport } from "next";
+import { I18nProvider } from "@/components/i18n-provider";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Электроэнергия — расчёт и оплата",
+  title: "Electricity — meter readings & payments",
   description:
-    "Личный расчёт оплаты за электроэнергию по дневному и ночному тарифам с историей показаний и оплат за годы.",
-  applicationName: "Электроэнергия",
+    "Personal electricity bill calculator for day and night tariffs with multi-year meter reading and payment history.",
+  applicationName: "Electricity",
   robots: {
     index: false,
     follow: false,
   },
   appleWebApp: {
     capable: true,
-    title: "Электроэнергия",
+    title: "Electricity",
     statusBarStyle: "default",
   },
   formatDetection: {
@@ -40,7 +41,7 @@ export default function RootLayout({
     <html lang="ru">
       <body>
         <ServiceWorkerRegister />
-        {children}
+        <I18nProvider>{children}</I18nProvider>
       </body>
     </html>
   );

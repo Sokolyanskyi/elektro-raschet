@@ -18,14 +18,14 @@ async function guard(): Promise<Guard> {
   if (!env) {
     return {
       response: NextResponse.json(
-        { error: "Облачное хранилище не настроено" },
+        { error: "storage_not_configured" },
         { status: 400 },
       ),
     };
   }
   if (!(await isAuthenticated(env))) {
     return {
-      response: NextResponse.json({ error: "Требуется вход" }, { status: 401 }),
+      response: NextResponse.json({ error: "unauthorized" }, { status: 401 }),
     };
   }
   return { env };
@@ -46,18 +46,18 @@ export async function PATCH(
   } | null;
 
   if (!body) {
-    return NextResponse.json({ error: "Нет данных" }, { status: 400 });
+    return NextResponse.json({ error: "no_data" }, { status: 400 });
   }
 
   try {
     const current = await getRecord(auth.env, id);
     if (!current) {
-      return NextResponse.json({ error: "Расчёт не найден" }, { status: 404 });
+      return NextResponse.json({ error: "record_not_found" }, { status: 404 });
     }
 
     if (current.paid && body.unlock !== true) {
       return NextResponse.json(
-        { error: "Расчёт оплачен и заблокирован. Сначала отмените оплату." },
+        { error: "record_locked" },
         { status: 409 },
       );
     }
@@ -85,13 +85,13 @@ export async function PATCH(
         id,
       );
       if (!candidate) {
-        return NextResponse.json({ error: "Некорректные данные расчёта" }, { status: 400 });
+        return NextResponse.json({ error: "invalid_record" }, { status: 400 });
       }
 
       const existing = await listRecords(auth.env);
       if (existing.some((item) => item.period === candidate.period && item.id !== id)) {
         return NextResponse.json(
-          { error: "За этот месяц уже есть расчёт" },
+          { error: "duplicate_period" },
           { status: 409 },
         );
       }
@@ -107,14 +107,14 @@ export async function PATCH(
     }
 
     if (!changed) {
-      return NextResponse.json({ error: "Нет изменений" }, { status: 400 });
+      return NextResponse.json({ error: "no_changes" }, { status: 400 });
     }
 
     next.updatedAt = now;
     await saveRecord(auth.env, next);
     return NextResponse.json({ record: next });
   } catch {
-    return NextResponse.json({ error: "Не удалось обновить расчёт" }, { status: 500 });
+    return NextResponse.json({ error: "update_failed" }, { status: 500 });
   }
 }
 
@@ -130,17 +130,17 @@ export async function DELETE(
   try {
     const current = await getRecord(auth.env, id);
     if (!current) {
-      return NextResponse.json({ error: "Расчёт не найден" }, { status: 404 });
+      return NextResponse.json({ error: "record_not_found" }, { status: 404 });
     }
     if (current.paid) {
       return NextResponse.json(
-        { error: "Оплаченный расчёт нельзя удалить. Сначала отмените оплату." },
+        { error: "paid_delete_forbidden" },
         { status: 409 },
       );
     }
     await deleteRecord(auth.env, id);
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Не удалось удалить расчёт" }, { status: 500 });
+    return NextResponse.json({ error: "delete_failed" }, { status: 500 });
   }
 }

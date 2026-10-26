@@ -10,6 +10,7 @@ import {
   monthLabel,
 } from "@/lib/format";
 import type { MeterRecord } from "@/lib/types";
+import { useI18n } from "./i18n-provider";
 import {
   CheckIcon,
   MoonIcon,
@@ -36,7 +37,9 @@ export function RecordCard({
   onMarkPaid,
   onUnlock,
 }: RecordCardProps) {
+  const { locale, t } = useI18n();
   const usage = calculateUsage(record);
+  const status = record.paid ? t("side.statusPaid") : t("side.statusUnpaid");
 
   return (
     <article className={`record ${record.paid ? "is-paid" : "is-unpaid"}`}>
@@ -47,16 +50,19 @@ export function RecordCard({
               {record.paid ? <CheckIcon width={15} height={15} /> : <span />}
             </span>
             <div>
-              <h3>{monthLabel(record.period)}</h3>
+              <h3>{monthLabel(record.period, locale)}</h3>
               <p>
-                {formatKwh(usage.totalUsage)} · данные от {formatDate(record.enteredAt)}
+                {formatKwh(usage.totalUsage, locale)} ·{" "}
+                {t("record.dataFrom", {
+                  date: formatDate(record.enteredAt, locale),
+                })}
               </p>
             </div>
           </div>
           <div className="record-sum">
-            <strong>{formatMoney(usage.total)}</strong>
+            <strong>{formatMoney(usage.total, locale)}</strong>
             <span className={`status ${record.paid ? "status-paid" : "status-unpaid"}`}>
-              {record.paid ? "Оплачено" : "Не оплачено"}
+              {status}
             </span>
           </div>
         </div>
@@ -65,32 +71,40 @@ export function RecordCard({
           <div className="breakdown-chip">
             <span className="breakdown-name">
               <SunIcon width={14} height={14} />
-              День
+              {t("common.day")}
             </span>
             <span className="breakdown-calc">
-              {formatNumber(usage.dayUsage)} × {formatNumber(record.dayRate)} ₴
+              {formatNumber(usage.dayUsage, locale)} ×{" "}
+              {formatNumber(record.dayRate, locale)} ₴
             </span>
-            <b>{formatMoney(usage.dayCost)}</b>
+            <b>{formatMoney(usage.dayCost, locale)}</b>
           </div>
           <div className="breakdown-chip">
             <span className="breakdown-name">
               <MoonIcon width={14} height={14} />
-              Ночь
+              {t("common.night")}
             </span>
             <span className="breakdown-calc">
-              {formatNumber(usage.nightUsage)} × {formatNumber(record.nightRate)} ₴
+              {formatNumber(usage.nightUsage, locale)} ×{" "}
+              {formatNumber(record.nightRate, locale)} ₴
             </span>
-            <b>{formatMoney(usage.nightCost)}</b>
+            <b>{formatMoney(usage.nightCost, locale)}</b>
           </div>
         </div>
 
         <div className="record-meta">
           <span>
-            День: {formatNumber(record.dayPrev)} → {formatNumber(record.dayCurr)}
+            {t("record.metaDay", {
+              prev: formatNumber(record.dayPrev, locale),
+              curr: formatNumber(record.dayCurr, locale),
+            })}
           </span>
           <span className="meta-sep">·</span>
           <span>
-            Ночь: {formatNumber(record.nightPrev)} → {formatNumber(record.nightCurr)}
+            {t("record.metaNight", {
+              prev: formatNumber(record.nightPrev, locale),
+              curr: formatNumber(record.nightCurr, locale),
+            })}
           </span>
           {record.note ? (
             <>
@@ -117,11 +131,11 @@ export function RecordCard({
             <CheckIcon width={15} height={15} />
           </span>
           <span className="pay-text">
-            <b>{record.paid ? "Оплачено" : "Отметить оплату"}</b>
+            <b>{record.paid ? t("side.statusPaid") : t("record.markPaid")}</b>
             <small>
               {record.paid
-                ? formatDateTime(record.paidAt)
-                : "Дата зафиксируется автоматически"}
+                ? formatDateTime(record.paidAt, locale)
+                : t("record.payDateAuto")}
             </small>
           </span>
         </label>
@@ -135,7 +149,7 @@ export function RecordCard({
               disabled={busy}
             >
               <UndoIcon width={15} height={15} />
-              Отменить оплату
+              {t("record.unlock")}
             </button>
           ) : (
             <>
@@ -146,7 +160,7 @@ export function RecordCard({
                 disabled={busy}
               >
                 <PencilIcon width={15} height={15} />
-                Изменить
+                {t("record.edit")}
               </button>
               <button
                 type="button"
@@ -155,7 +169,7 @@ export function RecordCard({
                 disabled={busy}
               >
                 <TrashIcon width={15} height={15} />
-                Удалить
+                {t("record.delete")}
               </button>
             </>
           )}

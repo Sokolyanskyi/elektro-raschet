@@ -17,14 +17,14 @@ async function guard(): Promise<Guard> {
   if (!env) {
     return {
       response: NextResponse.json(
-        { error: "Облачное хранилище не настроено" },
+        { error: "storage_not_configured" },
         { status: 400 },
       ),
     };
   }
   if (!(await isAuthenticated(env))) {
     return {
-      response: NextResponse.json({ error: "Требуется вход" }, { status: 401 }),
+      response: NextResponse.json({ error: "unauthorized" }, { status: 401 }),
     };
   }
   return { env };
@@ -38,10 +38,7 @@ export async function GET() {
     const records = await listRecords(auth.env);
     return NextResponse.json({ records });
   } catch {
-    return NextResponse.json(
-      { error: "Не удалось загрузить расчёты из облака" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "load_failed" }, { status: 500 });
   }
 }
 
@@ -51,7 +48,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as { record?: unknown } | null;
   if (!body?.record) {
-    return NextResponse.json({ error: "Нет данных расчёта" }, { status: 400 });
+    return NextResponse.json({ error: "no_data" }, { status: 400 });
   }
 
   const now = new Date().toISOString();
@@ -65,21 +62,21 @@ export async function POST(request: Request) {
   });
 
   if (!record) {
-    return NextResponse.json({ error: "Некорректные данные расчёта" }, { status: 400 });
+    return NextResponse.json({ error: "invalid_record" }, { status: 400 });
   }
 
   try {
     const existing = await listRecords(auth.env);
     if (existing.some((item) => item.period === record.period)) {
       return NextResponse.json(
-        { error: "За этот месяц уже есть расчёт" },
+        { error: "duplicate_period" },
         { status: 409 },
       );
     }
     await saveRecord(auth.env, record);
     return NextResponse.json({ record }, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Не удалось сохранить расчёт" }, { status: 500 });
+    return NextResponse.json({ error: "save_failed" }, { status: 500 });
   }
 }
 
@@ -90,15 +87,15 @@ export async function PUT(request: Request) {
 
   const body = (await request.json().catch(() => null)) as { records?: unknown } | null;
   if (!Array.isArray(body?.records)) {
-    return NextResponse.json({ error: "Нет списка расчётов" }, { status: 400 });
+    return NextResponse.json({ error: "no_records" }, { status: 400 });
   }
   if (body.records.length > 5000) {
-    return NextResponse.json({ error: "Слишком много записей в файле" }, { status: 400 });
+    return NextResponse.json({ error: "too_many_records" }, { status: 400 });
   }
 
   const records = body.records.map((item) => sanitizeRecord(item));
   if (records.some((record) => record === null)) {
-    return NextResponse.json({ error: "В файле есть некорректные записи" }, { status: 400 });
+    return NextResponse.json({ error: "invalid_records" }, { status: 400 });
   }
 
   try {
@@ -108,6 +105,6 @@ export async function PUT(request: Request) {
     );
     return NextResponse.json(result);
   } catch {
-    return NextResponse.json({ error: "Не удалось импортировать расчёты" }, { status: 500 });
+    return NextResponse.json({ error: "import_failed" }, { status: 500 });
   }
 }

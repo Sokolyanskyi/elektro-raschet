@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { tNow } from "@/lib/i18n";
 import type { CloudStatus, MeterRecord, RecordDraft, Settings, StorageMode } from "@/lib/types";
 import {
   ApiError,
@@ -27,7 +28,7 @@ import {
 function errorMessage(error: unknown): string {
   return error instanceof Error && error.message
     ? error.message
-    : "Что-то пошло не так. Попробуйте ещё раз.";
+    : tNow("error.unexpected");
 }
 
 export interface RecordsStore {
@@ -85,7 +86,7 @@ export function useRecords(): RecordsStore {
 
       if (status.error) {
         setMode("error");
-        setError("Хранилище в облаке недоступно. Проверьте настройки KV_REST_API_URL и KV_REST_API_TOKEN.");
+        setError(tNow("error.storageUnavailableCloud"));
         return;
       }
 
@@ -159,15 +160,15 @@ export function useRecords(): RecordsStore {
         }
 
         if (mode !== "local") {
-          throw new Error("Хранилище недоступно");
+          throw new Error(tNow("error.storageUnavailable"));
         }
 
         const now = new Date().toISOString();
         if (editingId) {
           const current = records.find((record) => record.id === editingId);
-          if (!current) throw new Error("Расчёт не найден");
+          if (!current) throw new Error(tNow("error.recordNotFound"));
           if (current.paid) {
-            throw new Error("Оплаченный расчёт нельзя изменить. Сначала отмените оплату.");
+            throw new Error(tNow("error.paidLocked"));
           }
           const updated: MeterRecord = {
             ...current,
@@ -207,7 +208,7 @@ export function useRecords(): RecordsStore {
           return;
         }
 
-        if (mode !== "local") throw new Error("Хранилище недоступно");
+        if (mode !== "local") throw new Error(tNow("error.storageUnavailable"));
         const now = new Date().toISOString();
         let found = false;
         const next = records.map((record) => {
@@ -220,7 +221,7 @@ export function useRecords(): RecordsStore {
             updatedAt: now,
           };
         });
-        if (!found) throw new Error("Расчёт не найден");
+        if (!found) throw new Error(tNow("error.recordNotFound"));
         saveLocalRecords(next);
         setRecords(sortRecords(next));
       }),
@@ -235,7 +236,7 @@ export function useRecords(): RecordsStore {
           setRecords((current) => current.filter((record) => record.id !== id));
           return;
         }
-        if (mode !== "local") throw new Error("Хранилище недоступно");
+        if (mode !== "local") throw new Error(tNow("error.storageUnavailable"));
         const next = records.filter((record) => record.id !== id);
         saveLocalRecords(next);
         setRecords(sortRecords(next));
@@ -257,7 +258,7 @@ export function useRecords(): RecordsStore {
           setRecords(sortRecords(list));
           return result;
         }
-        if (mode !== "local") throw new Error("Хранилище недоступно");
+        if (mode !== "local") throw new Error(tNow("error.storageUnavailable"));
 
         const local = loadLocalRecords();
         const result = mergeRecordLists(local, incoming);
@@ -273,8 +274,8 @@ export function useRecords(): RecordsStore {
     () =>
       withBusy(async () => {
         const local = loadLocalRecords();
-        if (local.length === 0) throw new Error("На этом устройстве нет сохранённых расчётов");
-        if (mode !== "cloud") throw new Error("Облако не подключено");
+        if (local.length === 0) throw new Error(tNow("error.noLocalRecords"));
+        if (mode !== "cloud") throw new Error(tNow("error.cloudNotConnected"));
         const result = await mergeCloudRecords(local);
         const list = await listCloudRecords();
         setRecords(sortRecords(list));

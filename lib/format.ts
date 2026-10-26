@@ -1,56 +1,128 @@
-const MONTHS = [
-  "Январь",
-  "Февраль",
-  "Март",
-  "Апрель",
-  "Май",
-  "Июнь",
-  "Июль",
-  "Август",
-  "Сентябрь",
-  "Октябрь",
-  "Ноябрь",
-  "Декабрь",
-];
+import type { Locale } from "./i18n/locales";
+import { LOCALE_META, usesDecimalComma } from "./i18n/locales";
 
-const MONTHS_SHORT = [
-  "янв",
-  "фев",
-  "мар",
-  "апр",
-  "май",
-  "июн",
-  "июл",
-  "авг",
-  "сен",
-  "окт",
-  "ноя",
-  "дек",
-];
+const KWH_UNIT: Record<Locale, string> = {
+  ru: "кВт·ч",
+  uk: "кВт·ч",
+  en: "kWh",
+  pl: "kWh",
+  zh: "千瓦时",
+};
 
-const moneyFormatter = new Intl.NumberFormat("ru-RU", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+const moneyFormatters = new Map<Locale, Intl.NumberFormat>();
+const moneyPlainFormatters = new Map<Locale, Intl.NumberFormat>();
+const numberFormatters = new Map<Locale, Intl.NumberFormat>();
+const dateFormatters = new Map<Locale, Intl.DateTimeFormat>();
+const monthLongFormatters = new Map<Locale, Intl.DateTimeFormat>();
+const monthShortFormatters = new Map<Locale, Intl.DateTimeFormat>();
+const timeFormatters = new Map<Locale, Intl.DateTimeFormat>();
 
-const numberFormatter = new Intl.NumberFormat("ru-RU", {
-  maximumFractionDigits: 2,
-});
-
-export function formatMoney(value: number): string {
-  return `${moneyFormatter.format(Number.isFinite(value) ? value : 0)} ₴`;
+function intlTag(locale: Locale): string {
+  return LOCALE_META[locale]?.intl ?? LOCALE_META.ru.intl;
 }
 
-export function formatMoneyPlain(value: number): string {
-  return moneyFormatter.format(Number.isFinite(value) ? value : 0);
+function moneyFormatter(locale: Locale): Intl.NumberFormat {
+  let formatter = moneyFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(intlTag(locale), {
+      style: "currency",
+      currency: "UAH",
+      currencyDisplay: "narrowSymbol",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    moneyFormatters.set(locale, formatter);
+  }
+  return formatter;
 }
 
-export function formatNumber(value: number): string {
-  return numberFormatter.format(Number.isFinite(value) ? value : 0);
+function moneyPlainFormatter(locale: Locale): Intl.NumberFormat {
+  let formatter = moneyPlainFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(intlTag(locale), {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    moneyPlainFormatters.set(locale, formatter);
+  }
+  return formatter;
 }
 
-export function formatKwh(value: number): string {
-  return `${formatNumber(value)} кВт·ч`;
+function numberFormatter(locale: Locale): Intl.NumberFormat {
+  let formatter = numberFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(intlTag(locale), {
+      maximumFractionDigits: 2,
+    });
+    numberFormatters.set(locale, formatter);
+  }
+  return formatter;
+}
+
+function dateFormatter(locale: Locale): Intl.DateTimeFormat {
+  let formatter = dateFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(intlTag(locale), {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    dateFormatters.set(locale, formatter);
+  }
+  return formatter;
+}
+
+function monthLongFormatter(locale: Locale): Intl.DateTimeFormat {
+  let formatter = monthLongFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(intlTag(locale), {
+      month: "long",
+      timeZone: "UTC",
+    });
+    monthLongFormatters.set(locale, formatter);
+  }
+  return formatter;
+}
+
+function monthShortFormatter(locale: Locale): Intl.DateTimeFormat {
+  let formatter = monthShortFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(intlTag(locale), {
+      month: "short",
+      timeZone: "UTC",
+    });
+    monthShortFormatters.set(locale, formatter);
+  }
+  return formatter;
+}
+
+function timeFormatter(locale: Locale): Intl.DateTimeFormat {
+  let formatter = timeFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(intlTag(locale), {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    timeFormatters.set(locale, formatter);
+  }
+  return formatter;
+}
+
+export function formatMoney(value: number, locale: Locale = "ru"): string {
+  return moneyFormatter(locale).format(Number.isFinite(value) ? value : 0);
+}
+
+export function formatMoneyPlain(value: number, locale: Locale = "ru"): string {
+  return moneyPlainFormatter(locale).format(Number.isFinite(value) ? value : 0);
+}
+
+export function formatNumber(value: number, locale: Locale = "ru"): string {
+  return numberFormatter(locale).format(Number.isFinite(value) ? value : 0);
+}
+
+export function formatKwh(value: number, locale: Locale = "ru"): string {
+  return `${formatNumber(value, locale)} ${KWH_UNIT[locale] ?? KWH_UNIT.ru}`;
 }
 
 /** Русские формы множественного числа: 1 расчёт, 2 расчёта, 5 расчётов. */
@@ -64,15 +136,38 @@ export function pluralRu(count: number, one: string, few: string, many: string):
   return many;
 }
 
-/** «2026-10» → «Октябрь 2026». */
-export function monthLabel(period: string): string {
-  if (!/^\d{4}-\d{2}$/.test(period)) return period;
-  const [year, month] = period.split("-").map(Number);
-  return `${MONTHS[month - 1]} ${year}`;
+function capitalize(text: string, locale: Locale): string {
+  if (!text) return text;
+  const [first, ...rest] = Array.from(text);
+  return first.toLocaleUpperCase(intlTag(locale)) + rest.join("");
 }
 
-export function monthShortLabel(month: number): string {
-  return MONTHS_SHORT[month - 1] ?? "";
+/** «2026-10» → «Октябрь 2026» / «October 2026» / «2026年10月». */
+export function monthLabel(period: string, locale: Locale = "ru"): string {
+  if (!/^\d{4}-\d{2}$/.test(period)) return period;
+  const [year, month] = period.split("-").map(Number);
+  if (month < 1 || month > 12) return period;
+  const name = monthLongFormatter(locale).format(new Date(Date.UTC(year, month - 1, 1)));
+  if (locale === "zh") {
+    return `${year}年${name}`;
+  }
+  return `${capitalize(name, locale)} ${year}`;
+}
+
+/** «11» → «Ноябрь» / «November» / «十一月» (без года). */
+export function monthName(month: number, locale: Locale = "ru"): string {
+  if (month < 1 || month > 12) return "";
+  return capitalize(
+    monthLongFormatter(locale).format(new Date(Date.UTC(2026, month - 1, 1))),
+    locale,
+  );
+}
+
+export function monthShortLabel(month: number, locale: Locale = "ru"): string {
+  if (month < 1 || month > 12) return "";
+  return monthShortFormatter(locale)
+    .format(new Date(Date.UTC(2026, month - 1, 1)))
+    .replace(/\.$/, "");
 }
 
 export function yearOf(period: string): number {
@@ -80,25 +175,29 @@ export function yearOf(period: string): number {
 }
 
 /** «2026-10-26» → «26.10.2026» (без сдвигов часового пояса). */
-export function formatDate(value: string | null | undefined): string {
+export function formatDate(value: string | null | undefined, locale: Locale = "ru"): string {
   if (!value) return "—";
   const datePart = value.slice(0, 10);
   const parts = datePart.split("-");
   if (parts.length === 3 && parts[0].length === 4) {
-    return `${parts[2]}.${parts[1]}.${parts[0]}`;
+    const [year, month, day] = parts.map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (!Number.isNaN(date.getTime())) {
+      return dateFormatter(locale).format(date);
+    }
   }
   return datePart;
 }
 
-export function formatDateTime(value: string | null | undefined): string {
+export function formatDateTime(
+  value: string | null | undefined,
+  locale: Locale = "ru",
+): string {
   if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return formatDate(value);
-  const time = new Intl.DateTimeFormat("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-  return `${formatDate(value)}, ${time}`;
+  if (Number.isNaN(date.getTime())) return formatDate(value, locale);
+  const time = timeFormatter(locale).format(date);
+  return `${formatDate(value, locale)}, ${time}`;
 }
 
 /** Локальная дата в формате YYYY-MM-DD. */
@@ -126,8 +225,12 @@ export function previousPeriod(period: string): string {
   return shiftPeriod(period, -1);
 }
 
-/** Из числа в строку для input: 1234.5 → «1234,5». */
-export function toInputValue(value: number | null | undefined): string {
+/** Из числа в строку для input: 1234.5 → «1234,5» (ru) или «1234.5» (en). */
+export function toInputValue(
+  value: number | null | undefined,
+  locale: Locale = "ru",
+): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return "";
-  return String(value).replace(".", ",");
+  const text = String(value);
+  return usesDecimalComma(locale) ? text.replace(".", ",") : text;
 }

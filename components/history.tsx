@@ -7,10 +7,10 @@ import {
   formatNumber,
   monthLabel,
   monthShortLabel,
-  pluralRu,
   yearOf,
 } from "@/lib/format";
 import type { MeterRecord } from "@/lib/types";
+import { useI18n } from "./i18n-provider";
 import { ChartIcon, PlusIcon } from "./icons";
 import { RecordCard } from "./record-card";
 
@@ -37,6 +37,7 @@ export function History({
   onMarkPaid,
   onUnlock,
 }: HistoryProps) {
+  const { locale, t } = useI18n();
   const years = Array.from(new Set(records.map((record) => yearOf(record.period))));
   if (!years.includes(currentYear)) years.push(currentYear);
   years.sort((a, b) => b - a);
@@ -81,17 +82,20 @@ export function History({
     }
   }
 
+  const scope =
+    selectedYear === "all"
+      ? t("history.scopeAll")
+      : t("history.scopeYear", { year: selectedYear });
+
   return (
     <section className="history" id="history">
       <div className="history-head">
         <div>
-          <p className="eyebrow">История</p>
-          <h2>Расчёты и оплаты</h2>
-          <p className="history-sub">
-            Все месяцы сохраняются — можно вернуться к любому году.
-          </p>
+          <p className="eyebrow">{t("history.eyebrow")}</p>
+          <h2>{t("history.title")}</h2>
+          <p className="history-sub">{t("history.subtitle")}</p>
         </div>
-        <div className="year-tabs" role="tablist" aria-label="Фильтр по годам">
+        <div className="year-tabs" role="tablist" aria-label={t("history.yearFilter")}>
           {years.map((year) => (
             <button
               key={year}
@@ -111,7 +115,7 @@ export function History({
             className={`year-tab ${selectedYear === "all" ? "is-active" : ""}`}
             onClick={() => onSelectYear("all")}
           >
-            Все
+            {t("history.all")}
           </button>
         </div>
       </div>
@@ -121,19 +125,20 @@ export function History({
           <div className="empty-icon">
             <ChartIcon width={26} height={26} />
           </div>
-          <h3>{selectedYear === "all" ? "Пока нет расчётов" : `За ${selectedYear} год расчётов нет`}</h3>
-          <p>
-            Сохраните первый расчёт — он появится здесь. Записи хранятся годами, так что
-            история всегда будет под рукой.
-          </p>
+          <h3>
+            {selectedYear === "all"
+              ? t("history.emptyAll")
+              : t("history.emptyYear", { year: selectedYear })}
+          </h3>
+          <p>{t("history.emptyText")}</p>
           <div className="empty-actions">
             <a className="btn btn-secondary" href="#calculator">
               <PlusIcon width={17} height={17} />
-              К расчёту
+              {t("history.goToCalc")}
             </a>
             {selectedYear !== "all" && records.length > 0 ? (
               <button type="button" className="btn btn-ghost" onClick={() => onSelectYear("all")}>
-                Показать все годы
+                {t("history.showAll")}
               </button>
             ) : null}
           </div>
@@ -142,21 +147,21 @@ export function History({
         <>
           <div className="year-summary">
             <div className="year-summary-item">
-              <span>Расход</span>
-              <b>{formatKwh(totals.usage)}</b>
+              <span>{t("history.usage")}</span>
+              <b>{formatKwh(totals.usage, locale)}</b>
             </div>
             <div className="year-summary-item">
-              <span>Начислено</span>
-              <b>{formatMoney(totals.total)}</b>
+              <span>{t("history.charged")}</span>
+              <b>{formatMoney(totals.total, locale)}</b>
             </div>
             <div className="year-summary-item">
-              <span>Оплачено</span>
-              <b className="value-paid">{formatMoney(totals.paid)}</b>
+              <span>{t("history.paid")}</span>
+              <b className="value-paid">{formatMoney(totals.paid, locale)}</b>
             </div>
             <div className="year-summary-item">
-              <span>Долг</span>
+              <span>{t("history.debt")}</span>
               <b className={debt > 0 ? "value-debt" : "value-zero"}>
-                {formatMoney(debt)}
+                {formatMoney(debt, locale)}
               </b>
             </div>
           </div>
@@ -164,8 +169,8 @@ export function History({
           {chartYear ? (
             <div className="chart">
               <div className="chart-head">
-                <span>Начисления по месяцам, {chartYear}</span>
-                <span>{formatMoney(totals.total)}</span>
+                <span>{t("history.chartTitle", { year: chartYear })}</span>
+                <span>{formatMoney(totals.total, locale)}</span>
               </div>
               <div className="chart-bars">
                 {monthly.map((value, index) => (
@@ -174,11 +179,11 @@ export function History({
                       <div
                         className={`chart-bar ${value > 0 ? "has-value" : ""}`}
                         style={{ height: `${value > 0 ? Math.max(6, (value / maxMonthly) * 100) : 0}%` }}
-                        title={`${monthShortLabel(index + 1)}: ${formatMoney(value)}`}
+                        title={`${monthShortLabel(index + 1, locale)}: ${formatMoney(value, locale)}`}
                       />
                     </div>
                     <span className={`chart-label ${value > 0 ? "has-value" : ""}`}>
-                      {monthShortLabel(index + 1)}
+                      {monthShortLabel(index + 1, locale)}
                     </span>
                   </div>
                 ))}
@@ -191,13 +196,14 @@ export function History({
               <div className="record-group" key={group.year}>
                 {selectedYear === "all" ? (
                   <div className="group-title">
-                    <span>{group.year} год</span>
+                    <span>{t("history.yearGroup", { year: group.year })}</span>
                     <span>
                       {formatMoney(
                         group.records.reduce(
                           (sum, record) => sum + calculateUsage(record).total,
                           0,
                         ),
+                        locale,
                       )}
                     </span>
                   </div>
@@ -220,10 +226,11 @@ export function History({
           </div>
 
           <p className="history-total">
-            Показано {filtered.length}{" "}
-            {pluralRu(filtered.length, "расчёт", "расчёта", "расчётов")}
-            {selectedYear === "all" ? " за всё время" : ` за ${selectedYear} год`} ·{" "}
-            {formatNumber(totals.usage)} кВт·ч
+            {t("history.total", {
+              count: filtered.length,
+              kwh: `${formatNumber(totals.usage, locale)} ${t("common.kwh")}`,
+              scope,
+            })}
           </p>
         </>
       )}

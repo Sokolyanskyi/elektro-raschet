@@ -11,7 +11,9 @@ import {
   todayISO,
   toInputValue,
 } from "@/lib/format";
+import { usesDecimalComma } from "@/lib/i18n";
 import type { MeterRecord, RecordDraft, Settings } from "@/lib/types";
+import { useI18n } from "./i18n-provider";
 import {
   BoltIcon,
   CalendarIcon,
@@ -21,6 +23,7 @@ import {
   SunIcon,
   WalletIcon,
 } from "./icons";
+import { MonthPicker } from "./month-picker";
 
 interface RecordFormProps {
   records: MeterRecord[];
@@ -79,6 +82,7 @@ export function RecordForm({
   onOpenExisting,
   onNotify,
 }: RecordFormProps) {
+  const { locale, t } = useI18n();
   const initialPeriod = useMemo(
     () => (editing ? editing.period : suggestedPeriod(records)),
     // форма пересоздаётся через key при смене режима, значения нужны только на старте
@@ -94,18 +98,18 @@ export function RecordForm({
   const [period, setPeriod] = useState(initialPeriod);
   const [enteredAt, setEnteredAt] = useState(editing?.enteredAt ?? todayISO());
   const [dayPrev, setDayPrev] = useState(
-    toInputValue(editing ? editing.dayPrev : initialSource?.dayCurr),
+    toInputValue(editing ? editing.dayPrev : initialSource?.dayCurr, locale),
   );
   const [nightPrev, setNightPrev] = useState(
-    toInputValue(editing ? editing.nightPrev : initialSource?.nightCurr),
+    toInputValue(editing ? editing.nightPrev : initialSource?.nightCurr, locale),
   );
-  const [dayCurr, setDayCurr] = useState(toInputValue(editing?.dayCurr));
-  const [nightCurr, setNightCurr] = useState(toInputValue(editing?.nightCurr));
+  const [dayCurr, setDayCurr] = useState(toInputValue(editing?.dayCurr, locale));
+  const [nightCurr, setNightCurr] = useState(toInputValue(editing?.nightCurr, locale));
   const [dayRate, setDayRate] = useState(
-    toInputValue(editing ? editing.dayRate : defaultRates.dayRate),
+    toInputValue(editing ? editing.dayRate : defaultRates.dayRate, locale),
   );
   const [nightRate, setNightRate] = useState(
-    toInputValue(editing ? editing.nightRate : defaultRates.nightRate),
+    toInputValue(editing ? editing.nightRate : defaultRates.nightRate, locale),
   );
   const [prefillSource, setPrefillSource] = useState<string | null>(
     initialSource?.period ?? null,
@@ -175,23 +179,27 @@ export function RecordForm({
   const negativeUsage = usage !== null && (usage.dayUsage < 0 || usage.nightUsage < 0);
   const resultReady = usage !== null && !negativeUsage;
 
-  const visibleError = (key: string): string | undefined =>
-    showErrors || key === "period" ? errors[key] : undefined;
+  const visibleError = (key: string): string | undefined => {
+    const code = errors[key];
+    if (!code) return undefined;
+    if (!showErrors && key !== "period") return undefined;
+    return t(code);
+  };
 
   const handlePeriodChange = (next: string) => {
     setPeriod(next);
     if (editing) return;
     const source = latestBefore(next, records);
-    setDayPrev(source ? toInputValue(source.dayCurr) : "");
-    setNightPrev(source ? toInputValue(source.nightCurr) : "");
+    setDayPrev(source ? toInputValue(source.dayCurr, locale) : "");
+    setNightPrev(source ? toInputValue(source.nightCurr, locale) : "");
     setPrefillSource(source?.period ?? null);
   };
 
   const resetAfterSave = (saved: MeterRecord) => {
     const next = shiftPeriod(saved.period, 1);
     setPeriod(next);
-    setDayPrev(toInputValue(saved.dayCurr));
-    setNightPrev(toInputValue(saved.nightCurr));
+    setDayPrev(toInputValue(saved.dayCurr, locale));
+    setNightPrev(toInputValue(saved.nightCurr, locale));
     setDayCurr("");
     setNightCurr("");
     setEnteredAt(todayISO());
@@ -204,7 +212,7 @@ export function RecordForm({
     setShowErrors(true);
 
     if (Object.keys(errors).length > 0) {
-      onNotify("Проверьте заполнение полей", "error");
+      onNotify(t("form.validationToast"), "error");
       return;
     }
 
@@ -222,16 +230,17 @@ export function RecordForm({
     setSaving(true);
     try {
       const saved = await onSave(draft, editing?.id);
+      const month = monthLabel(saved.period, locale);
       onNotify(
         editing
-          ? `Изменения за ${monthLabel(saved.period)} сохранены`
-          : `Расчёт за ${monthLabel(saved.period)} сохранён`,
+          ? t("form.savedEdit", { month })
+          : t("form.saved", { month }),
         "success",
       );
       if (!editing) resetAfterSave(saved);
     } catch (error) {
       onNotify(
-        error instanceof Error ? error.message : "Не удалось сохранить расчёт",
+        error instanceof Error ? error.message : t("form.saveError"),
         "error",
       );
     } finally {
@@ -246,24 +255,30 @@ export function RecordForm({
     ? numbers.nightCurr - numbers.nightPrev
     : null;
 
+  const placeholder = usesDecimalComma(locale) ? "00000,0" : "00000.0";
+
   return (
     <section className="card form-card" id="calculator">
       <div className="card-head">
         <div>
-          <p className="eyebrow">{editing ? "Редактирование" : "Новый расчёт"}</p>
-          <h2>{editing ? monthLabel(editing.period) : "Внесите показания"}</h2>
+          <p className="eyebrow">{editing ? t("form.editEyebrow") : t("form.newEyebrow")}</p>
+          <h2>
+            {editing
+              ? monthLabel(editing.period, locale)
+              : t("form.newTitle")}
+          </h2>
         </div>
         <span className="soft-badge">
           <BoltIcon width={14} height={14} />
-          {monthLabel(period)}
+          {monthLabel(period, locale)}
         </span>
       </div>
 
       {editing ? (
         <div className="edit-banner">
-          <span>Вы изменяете сохранённый расчёт. После сохранения история обновится.</span>
+          <span>{t("form.editBanner")}</span>
           <button type="button" className="link-btn" onClick={onCancelEdit}>
-            Отменить
+            {t("form.cancel")}
           </button>
         </div>
       ) : null}
@@ -271,26 +286,19 @@ export function RecordForm({
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-grid form-grid-2">
           <Field
-            label="Расчётный месяц"
+            label={t("form.periodLabel")}
             htmlFor="period"
             error={visibleError("period")}
-            hint="Месяц, за который оплачиваем"
+            hint={t("form.periodHint")}
           >
-            <input
-              id="period"
-              className="input"
-              type="month"
-              value={period}
-              onChange={(event) => handlePeriodChange(event.target.value)}
-              required
-            />
+            <MonthPicker id="period" value={period} onChange={handlePeriodChange} />
           </Field>
 
           <Field
-            label="Дата внесения данных"
+            label={t("form.enteredAtLabel")}
             htmlFor="enteredAt"
             error={visibleError("enteredAt")}
-            hint="Когда вы записали показания"
+            hint={t("form.enteredAtHint")}
           >
             <div className="input-with-icon">
               <CalendarIcon width={17} height={17} />
@@ -308,14 +316,14 @@ export function RecordForm({
         </div>
 
         <div className="section-label">
-          <span>Показания счётчика</span>
-          <span>кВт·ч</span>
+          <span>{t("form.readingsSection")}</span>
+          <span>{t("common.kwh")}</span>
         </div>
 
         {prefillSource && !editing ? (
           <div className="prefill-hint">
             <BoltIcon width={14} height={14} />
-            Прошлые показания подставлены из расчёта за {monthLabel(prefillSource)}
+            {t("form.prefill", { month: monthLabel(prefillSource, locale) })}
           </div>
         ) : null}
 
@@ -327,17 +335,20 @@ export function RecordForm({
                   <SunIcon width={18} height={18} />
                 </span>
                 <div>
-                  <b>День</b>
-                  <small>{formatNumber(numbers.dayRate ?? defaultRates.dayRate)} ₴ / кВт·ч</small>
+                  <b>{t("common.day")}</b>
+                  <small>
+                    {formatNumber(numbers.dayRate ?? defaultRates.dayRate, locale)}{" "}
+                    {t("form.rateUnit")}
+                  </small>
                 </div>
               </div>
               <div className={`used-pill ${dayUsed !== null && dayUsed < 0 ? "is-negative" : ""}`}>
-                <span>Использовано</span>
-                <b>{dayUsed !== null ? formatNumber(dayUsed) : "—"}</b>
+                <span>{t("form.used")}</span>
+                <b>{dayUsed !== null ? formatNumber(dayUsed, locale) : "—"}</b>
               </div>
             </div>
             <div className="meter-fields">
-              <Field label="Прошлый месяц" htmlFor="dayPrev" error={visibleError("dayPrev")}>
+              <Field label={t("form.prevMonth")} htmlFor="dayPrev" error={visibleError("dayPrev")}>
                 <div className="input-with-unit">
                   <input
                     id="dayPrev"
@@ -345,18 +356,18 @@ export function RecordForm({
                     type="text"
                     inputMode="decimal"
                     autoComplete="off"
-                    placeholder="00000,0"
+                    placeholder={placeholder}
                     value={dayPrev}
                     onChange={(event) => {
                       setDayPrev(event.target.value);
                       setPrefillSource(null);
                     }}
                   />
-                  <span className="unit">кВт·ч</span>
+                  <span className="unit">{t("common.kwh")}</span>
                 </div>
               </Field>
               <div className="meter-arrow">→</div>
-              <Field label="Этот месяц" htmlFor="dayCurr" error={visibleError("dayCurr")}>
+              <Field label={t("form.thisMonth")} htmlFor="dayCurr" error={visibleError("dayCurr")}>
                 <div className="input-with-unit">
                   <input
                     id="dayCurr"
@@ -364,11 +375,11 @@ export function RecordForm({
                     type="text"
                     inputMode="decimal"
                     autoComplete="off"
-                    placeholder="00000,0"
+                    placeholder={placeholder}
                     value={dayCurr}
                     onChange={(event) => setDayCurr(event.target.value)}
                   />
-                  <span className="unit">кВт·ч</span>
+                  <span className="unit">{t("common.kwh")}</span>
                 </div>
               </Field>
             </div>
@@ -381,17 +392,20 @@ export function RecordForm({
                   <MoonIcon width={18} height={18} />
                 </span>
                 <div>
-                  <b>Ночь</b>
-                  <small>{formatNumber(numbers.nightRate ?? defaultRates.nightRate)} ₴ / кВт·ч</small>
+                  <b>{t("common.night")}</b>
+                  <small>
+                    {formatNumber(numbers.nightRate ?? defaultRates.nightRate, locale)}{" "}
+                    {t("form.rateUnit")}
+                  </small>
                 </div>
               </div>
               <div className={`used-pill ${nightUsed !== null && nightUsed < 0 ? "is-negative" : ""}`}>
-                <span>Использовано</span>
-                <b>{nightUsed !== null ? formatNumber(nightUsed) : "—"}</b>
+                <span>{t("form.used")}</span>
+                <b>{nightUsed !== null ? formatNumber(nightUsed, locale) : "—"}</b>
               </div>
             </div>
             <div className="meter-fields">
-              <Field label="Прошлый месяц" htmlFor="nightPrev" error={visibleError("nightPrev")}>
+              <Field label={t("form.prevMonth")} htmlFor="nightPrev" error={visibleError("nightPrev")}>
                 <div className="input-with-unit">
                   <input
                     id="nightPrev"
@@ -399,18 +413,18 @@ export function RecordForm({
                     type="text"
                     inputMode="decimal"
                     autoComplete="off"
-                    placeholder="00000,0"
+                    placeholder={placeholder}
                     value={nightPrev}
                     onChange={(event) => {
                       setNightPrev(event.target.value);
                       setPrefillSource(null);
                     }}
                   />
-                  <span className="unit">кВт·ч</span>
+                  <span className="unit">{t("common.kwh")}</span>
                 </div>
               </Field>
               <div className="meter-arrow">→</div>
-              <Field label="Этот месяц" htmlFor="nightCurr" error={visibleError("nightCurr")}>
+              <Field label={t("form.thisMonth")} htmlFor="nightCurr" error={visibleError("nightCurr")}>
                 <div className="input-with-unit">
                   <input
                     id="nightCurr"
@@ -418,11 +432,11 @@ export function RecordForm({
                     type="text"
                     inputMode="decimal"
                     autoComplete="off"
-                    placeholder="00000,0"
+                    placeholder={placeholder}
                     value={nightCurr}
                     onChange={(event) => setNightCurr(event.target.value)}
                   />
-                  <span className="unit">кВт·ч</span>
+                  <span className="unit">{t("common.kwh")}</span>
                 </div>
               </Field>
             </div>
@@ -438,17 +452,21 @@ export function RecordForm({
           >
             <span className="rates-toggle-label">
               <WalletIcon width={17} height={17} />
-              Тарифы для этого расчёта
+              {t("form.ratesToggle")}
             </span>
             <span className="rates-summary">
-              {formatNumber(numbers.dayRate ?? defaultRates.dayRate)} /{" "}
-              {formatNumber(numbers.nightRate ?? defaultRates.nightRate)} ₴
+              {formatNumber(numbers.dayRate ?? defaultRates.dayRate, locale)} /{" "}
+              {formatNumber(numbers.nightRate ?? defaultRates.nightRate, locale)} ₴
               <ChevronDownIcon width={16} height={16} />
             </span>
           </button>
           {ratesOpen ? (
             <div className="rates-grid">
-              <Field label="Тариф день, ₴/кВт·ч" htmlFor="dayRate" error={visibleError("dayRate")}>
+              <Field
+                label={t("form.rateDayLabel")}
+                htmlFor="dayRate"
+                error={visibleError("dayRate")}
+              >
                 <div className="input-with-unit">
                   <input
                     id="dayRate"
@@ -461,7 +479,11 @@ export function RecordForm({
                   <span className="unit">₴</span>
                 </div>
               </Field>
-              <Field label="Тариф ночь, ₴/кВт·ч" htmlFor="nightRate" error={visibleError("nightRate")}>
+              <Field
+                label={t("form.rateNightLabel")}
+                htmlFor="nightRate"
+                error={visibleError("nightRate")}
+              >
                 <div className="input-with-unit">
                   <input
                     id="nightRate"
@@ -474,10 +496,7 @@ export function RecordForm({
                   <span className="unit">₴</span>
                 </div>
               </Field>
-              <p className="rates-hint">
-                Тариф сохраняется вместе с расчётом. Если тарифы изменятся, старые месяцы
-                останутся посчитанными по прежней цене.
-              </p>
+              <p className="rates-hint">{t("form.ratesHint")}</p>
             </div>
           ) : null}
         </div>
@@ -485,15 +504,15 @@ export function RecordForm({
         {duplicate ? (
           <div className="alert alert-warning">
             <div>
-              <b>За {monthLabel(period)} уже есть расчёт.</b>
-              <p>Откройте его, чтобы изменить показания, или выберите другой месяц.</p>
+              <b>{t("form.duplicateTitle", { month: monthLabel(period, locale) })}</b>
+              <p>{t("form.duplicateText")}</p>
             </div>
             <button
               type="button"
               className="link-btn"
               onClick={() => onOpenExisting(duplicate)}
             >
-              Открыть
+              {t("form.openExisting")}
             </button>
           </div>
         ) : null}
@@ -501,14 +520,16 @@ export function RecordForm({
         <div className={`result-panel ${negativeUsage ? "is-invalid" : ""}`}>
           <div className="result-top">
             <div>
-              <span className="result-label">К оплате за {monthLabel(period)}</span>
+              <span className="result-label">
+                {t("form.toPay", { month: monthLabel(period, locale) })}
+              </span>
               <strong className={`result-total ${resultReady ? "" : "is-placeholder"}`}>
-                {resultReady ? formatMoney(usage.total) : "—"}
+                {resultReady ? formatMoney(usage.total, locale) : "—"}
               </strong>
             </div>
             <div className="result-total-kwh">
-              <span>{resultReady ? formatNumber(usage.totalUsage) : "—"}</span>
-              <small>кВт·ч всего</small>
+              <span>{resultReady ? formatNumber(usage.totalUsage, locale) : "—"}</span>
+              <small>{t("form.totalKwh")}</small>
             </div>
           </div>
 
@@ -517,23 +538,29 @@ export function RecordForm({
               <div className="result-row">
                 <span className="result-row-label">
                   <i className="dot dot-day" />
-                  День · {formatNumber(usage.dayUsage)} кВт·ч × {formatNumber(numbers.dayRate!)}
+                  {t("form.breakdownDay", {
+                    kwh: formatNumber(usage.dayUsage, locale),
+                    rate: formatNumber(numbers.dayRate!, locale),
+                  })}
                 </span>
-                <b>{formatMoney(usage.dayCost)}</b>
+                <b>{formatMoney(usage.dayCost, locale)}</b>
               </div>
               <div className="result-row">
                 <span className="result-row-label">
                   <i className="dot dot-night" />
-                  Ночь · {formatNumber(usage.nightUsage)} кВт·ч × {formatNumber(numbers.nightRate!)}
+                  {t("form.breakdownNight", {
+                    kwh: formatNumber(usage.nightUsage, locale),
+                    rate: formatNumber(numbers.nightRate!, locale),
+                  })}
                 </span>
-                <b>{formatMoney(usage.nightCost)}</b>
+                <b>{formatMoney(usage.nightCost, locale)}</b>
               </div>
             </div>
           ) : (
             <p className="result-placeholder">
               {negativeUsage
-                ? "Показание «этот месяц» меньше показания за прошлый месяц. Проверьте цифры."
-                : "Заполните показания за прошлый и текущий месяц — сумма посчитается автоматически."}
+                ? t("form.negative")
+                : t("form.resultPlaceholder")}
             </p>
           )}
         </div>
@@ -545,17 +572,18 @@ export function RecordForm({
             disabled={saving || busy || Boolean(duplicate)}
           >
             <CheckIcon width={18} height={18} />
-            {saving ? "Сохраняем…" : editing ? "Сохранить изменения" : "Сохранить расчёт"}
+            {saving
+              ? t("form.saving")
+              : editing
+                ? t("form.saveChanges")
+                : t("form.save")}
           </button>
           {editing ? (
             <button type="button" className="btn btn-ghost" onClick={onCancelEdit} disabled={saving}>
-              Отмена
+              {t("form.cancel")}
             </button>
           ) : null}
-          <p className="form-note">
-            После сохранения расчёт появится в истории. Отметка «Оплачено» ставится там же
-            и фиксирует дату оплаты.
-          </p>
+          <p className="form-note">{t("form.note")}</p>
         </div>
       </form>
     </section>

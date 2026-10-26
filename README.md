@@ -7,7 +7,9 @@ and the amount due. The history of calculations and payments is kept for years.
 **Live app:** https://elektro-raschet.vercel.app (owner PIN required)  
 **Repository:** https://github.com/Sokolyanskyi/elektro-raschet
 
-> The application interface is in Russian; this README is in English.
+> The interface is available in **English, Ukrainian, Polish, Chinese, and Russian**.
+> The first launch follows the browser language; you can change it in **Settings**.
+> All screenshots and the repository description use the English interface.
 
 ![Calculation and payment history](docs/screenshot-desktop.png)
 
@@ -32,9 +34,25 @@ and the amount due. The history of calculations and payments is kept for years.
   current default rates.
 - **Installable on a phone.** PWA manifest and icons; add it to the home screen.
 - **Light and dark themes.** Follows the system preference and adapts from 320 px up.
+- **Five languages.** English, Ukrainian, Polish, Chinese, and Russian. Switch in
+  Settings — the choice is remembered on the device; dates, numbers, and currency use
+  locale-aware formatting.
+- **Accessible by design.** Labelled fields, keyboard-friendly dialogs, visible focus
+  states, and `role`/`aria` attributes on tabs and language choices.
 
 <p align="center">
   <img src="docs/screenshot-mobile.png" alt="Mobile layout" width="320" />
+</p>
+
+## Languages
+
+The interface is fully translated into five languages. The language is picked in
+Settings, applied instantly, and remembered on the device; the very first launch
+follows the browser language. Dates, month names, numbers, kWh, and currency use
+locale-aware `Intl` formatting, and server errors are translated on the client.
+
+<p align="center">
+  <img src="docs/screenshot-settings.png" alt="Interface language selection" width="760" />
 </p>
 
 ## How the amount is calculated
@@ -176,11 +194,12 @@ app/
   globals.css          Design system, responsive layout, dark theme
 components/            Form, history, record cards, settings, modals
 lib/
-  calc.ts              Calculations, number parsing, validation
-  format.ts            Money, date, and month formatting
+  calc.ts              Calculations, number parsing, validation keys
+  format.ts            Locale-aware money, date, month, and number formatting
+  i18n/                Five message catalogues, locale detection, translation
   client/              localStorage, API client, hooks, export/import
   server/              Upstash REST client, sessions, PIN, record sanitization
-tests/                 Unit tests for calculations and backups
+tests/                 Unit tests for calculations, backups, and i18n
 ```
 
 ## Limitations

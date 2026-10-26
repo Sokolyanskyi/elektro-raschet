@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const env = getCloudEnv();
   if (!env) {
     return NextResponse.json(
-      { error: "Облачное хранилище не настроено" },
+      { error: "storage_not_configured" },
       { status: 400 },
     );
   }
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   const pin = typeof body?.pin === "string" ? body.pin.trim() : "";
 
   if (!pin) {
-    return NextResponse.json({ error: "Введите PIN-код" }, { status: 400 });
+    return NextResponse.json({ error: "pin_required" }, { status: 400 });
   }
 
   const ip = clientIp(request);
@@ -42,14 +42,14 @@ export async function POST(request: Request) {
   try {
     if (await isRateLimited(env, ip)) {
       return NextResponse.json(
-        { error: "Слишком много попыток. Попробуйте через 15 минут." },
+        { error: "rate_limited" },
         { status: 429 },
       );
     }
 
     if (!(await checkPin(env, pin))) {
       await registerFailedAttempt(env, ip);
-      return NextResponse.json({ error: "Неверный PIN-код" }, { status: 401 });
+      return NextResponse.json({ error: "wrong_pin" }, { status: 401 });
     }
 
     await resetFailedAttempts(env, ip);
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     return response;
   } catch {
     return NextResponse.json(
-      { error: "Не удалось войти. Проверьте настройки хранилища." },
+      { error: "login_failed" },
       { status: 500 },
     );
   }

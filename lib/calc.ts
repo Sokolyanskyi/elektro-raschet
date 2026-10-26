@@ -1,3 +1,5 @@
+import type { MessageKey } from "./i18n/messages";
+
 export const DEFAULT_DAY_RATE = 4.6;
 export const DEFAULT_NIGHT_RATE = 2.3;
 
@@ -73,7 +75,11 @@ export function isValidDate(date: string): boolean {
   );
 }
 
-export type ValidationErrors = Record<string, string>;
+/**
+ * Validation returns stable message keys rather than sentences. The form
+ * translates them, so switching the interface language updates existing errors.
+ */
+export type ValidationErrors = Record<string, MessageKey>;
 
 export function validateDraft(
   draft: {
@@ -94,45 +100,45 @@ export function validateDraft(
   const errors: ValidationErrors = {};
 
   if (!isValidPeriod(draft.period)) {
-    errors.period = "Выберите расчётный месяц";
+    errors.period = "validation.periodRequired";
   } else if (
     options?.existing?.some(
       (record) => record.period === draft.period && record.id !== options.currentId,
     )
   ) {
-    errors.period = "За этот месяц уже есть расчёт";
+    errors.period = "validation.periodDuplicate";
   }
 
   if (!isValidDate(draft.enteredAt)) {
-    errors.enteredAt = "Укажите дату внесения показаний";
+    errors.enteredAt = "validation.enteredAtRequired";
   }
 
-  const readings: Array<[string, number | null, string]> = [
-    ["dayPrev", draft.dayPrev, "Введите показание за прошлый месяц"],
-    ["dayCurr", draft.dayCurr, "Введите показание за этот месяц"],
-    ["nightPrev", draft.nightPrev, "Введите показание за прошлый месяц"],
-    ["nightCurr", draft.nightCurr, "Введите показание за этот месяц"],
+  const readings: Array<[string, number | null, MessageKey]> = [
+    ["dayPrev", draft.dayPrev, "validation.prevRequired"],
+    ["dayCurr", draft.dayCurr, "validation.currRequired"],
+    ["nightPrev", draft.nightPrev, "validation.prevRequired"],
+    ["nightCurr", draft.nightCurr, "validation.currRequired"],
   ];
 
-  for (const [key, value, message] of readings) {
+  for (const [key, value, messageKey] of readings) {
     if (value === null) {
-      errors[key] = message;
+      errors[key] = messageKey;
     } else if (value < 0) {
-      errors[key] = "Показание не может быть отрицательным";
+      errors[key] = "validation.negativeReading";
     } else if (value > MAX_READING) {
-      errors[key] = "Слишком большое значение";
+      errors[key] = "validation.readingTooLarge";
     }
   }
 
   if (draft.dayCurr !== null && draft.dayPrev !== null && draft.dayCurr < draft.dayPrev) {
-    errors.dayCurr = "Показание за этот месяц меньше предыдущего";
+    errors.dayCurr = "validation.currLessPrev";
   }
   if (
     draft.nightCurr !== null &&
     draft.nightPrev !== null &&
     draft.nightCurr < draft.nightPrev
   ) {
-    errors.nightCurr = "Показание за этот месяц меньше предыдущего";
+    errors.nightCurr = "validation.currLessPrev";
   }
 
   const rates: Array<[string, number | null]> = [
@@ -141,11 +147,11 @@ export function validateDraft(
   ];
   for (const [key, value] of rates) {
     if (value === null) {
-      errors[key] = "Укажите тариф";
+      errors[key] = "validation.rateRequired";
     } else if (value <= 0) {
-      errors[key] = "Тариф должен быть больше нуля";
+      errors[key] = "validation.ratePositive";
     } else if (value > MAX_RATE) {
-      errors[key] = "Слишком большой тариф";
+      errors[key] = "validation.rateTooLarge";
     }
   }
 
