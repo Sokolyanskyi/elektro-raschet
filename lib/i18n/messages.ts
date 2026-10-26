@@ -188,6 +188,16 @@ const ru = {
   "record.delete": "Удалить",
 
   "settings.title": "Настройки",
+  "settings.themeTitle": "Оформление",
+  "settings.themeText":
+    "Выберите цветовую схему — она применится сразу и сохранится на этом устройстве.",
+  "theme.classic": "Классика",
+  "theme.sky": "Небо",
+  "theme.emerald": "Изумруд",
+  "theme.sunset": "Закат",
+  "theme.rose": "Роза",
+  "theme.midnight": "Полночь",
+  "theme.graphite": "Графит",
   "settings.languageTitle": "Язык интерфейса",
   "settings.languageText":
     "Выберите язык — изменение применится сразу и сохранится на этом устройстве.",
@@ -502,6 +512,16 @@ const uk: Record<MessageKey, string> = {
   "record.delete": "Видалити",
 
   "settings.title": "Налаштування",
+  "settings.themeTitle": "Оформлення",
+  "settings.themeText":
+    "Виберіть колірну схему — вона застосується одразу й збережеться на цьому пристрої.",
+  "theme.classic": "Класика",
+  "theme.sky": "Небо",
+  "theme.emerald": "Смарагд",
+  "theme.sunset": "Захід сонця",
+  "theme.rose": "Троянда",
+  "theme.midnight": "Опівніч",
+  "theme.graphite": "Графіт",
   "settings.languageTitle": "Мова інтерфейсу",
   "settings.languageText":
     "Виберіть мову — зміна застосується одразу й збережеться на цьому пристрої.",
@@ -814,6 +834,16 @@ const en: Record<MessageKey, string> = {
   "record.delete": "Delete",
 
   "settings.title": "Settings",
+  "settings.themeTitle": "Appearance",
+  "settings.themeText":
+    "Pick a colour scheme — it applies immediately and is saved on this device.",
+  "theme.classic": "Classic",
+  "theme.sky": "Sky",
+  "theme.emerald": "Emerald",
+  "theme.sunset": "Sunset",
+  "theme.rose": "Rose",
+  "theme.midnight": "Midnight",
+  "theme.graphite": "Graphite",
   "settings.languageTitle": "Interface language",
   "settings.languageText":
     "Choose a language — it applies immediately and is saved on this device.",
@@ -1125,6 +1155,16 @@ const pl: Record<MessageKey, string> = {
   "record.delete": "Usuń",
 
   "settings.title": "Ustawienia",
+  "settings.themeTitle": "Wygląd",
+  "settings.themeText":
+    "Wybierz schemat kolorów — zmiana działa od razu i zostanie zapisana na tym urządzeniu.",
+  "theme.classic": "Klasyczny",
+  "theme.sky": "Niebo",
+  "theme.emerald": "Szmaragd",
+  "theme.sunset": "Zachód słońca",
+  "theme.rose": "Róża",
+  "theme.midnight": "Północ",
+  "theme.graphite": "Grafit",
   "settings.languageTitle": "Język interfejsu",
   "settings.languageText":
     "Wybierz język — zmiana działa od razu i zostanie zapisana na tym urządzeniu.",
@@ -1425,6 +1465,15 @@ const zh: Record<MessageKey, string> = {
   "record.delete": "删除",
 
   "settings.title": "设置",
+  "settings.themeTitle": "外观",
+  "settings.themeText": "选择配色方案——立即生效，并保存在此设备上。",
+  "theme.classic": "经典",
+  "theme.sky": "天空",
+  "theme.emerald": "翡翠",
+  "theme.sunset": "日落",
+  "theme.rose": "玫瑰",
+  "theme.midnight": "午夜",
+  "theme.graphite": "石墨",
   "settings.languageTitle": "界面语言",
   "settings.languageText": "选择语言——立即生效，并保存在此设备上。",
   "settings.ratesTitle": "默认费率",

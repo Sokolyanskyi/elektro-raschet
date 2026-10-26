@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { I18nProvider } from "@/components/i18n-provider";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
+import { ThemeProvider } from "@/components/theme-provider";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,10 +28,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3f5fb" },
-    { media: "(prefers-color-scheme: dark)", color: "#080d1a" },
-  ],
+  // The provider updates this meta when the user picks another colour scheme.
+  themeColor: "#f3f5fb",
 };
 
 export default function RootLayout({
@@ -38,10 +38,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body>
         <ServiceWorkerRegister />
-        <I18nProvider>{children}</I18nProvider>
+        <ThemeProvider>
+          <I18nProvider>{children}</I18nProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

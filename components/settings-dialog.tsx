@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { parseNumber } from "@/lib/calc";
 import { toInputValue } from "@/lib/format";
 import { LOCALES, LOCALE_META } from "@/lib/i18n";
+import { THEMES, THEME_META } from "@/lib/theme";
 import type { CloudStatus, Settings, StorageMode } from "@/lib/types";
 import { useI18n } from "./i18n-provider";
 import {
@@ -13,10 +14,12 @@ import {
   DownloadIcon,
   GlobeIcon,
   ShieldIcon,
+  SunIcon,
   UploadIcon,
   WalletIcon,
 } from "./icons";
 import { Modal } from "./modal";
+import { useTheme } from "./theme-provider";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -50,6 +53,7 @@ export function SettingsDialog({
   onSignOut,
 }: SettingsDialogProps) {
   const { locale, setLocale, t } = useI18n();
+  const { theme, setTheme } = useTheme();
   const [dayRate, setDayRate] = useState(toInputValue(settings.dayRate, locale));
   const [nightRate, setNightRate] = useState(toInputValue(settings.nightRate, locale));
   const [rateError, setRateError] = useState<string | null>(null);
@@ -76,6 +80,69 @@ export function SettingsDialog({
 
   return (
     <Modal open={open} title={t("settings.title")} onClose={onClose} size="wide">
+      <div className="settings-section">
+        <div className="settings-title">
+          <SunIcon width={18} height={18} />
+          <div>
+            <h3>{t("settings.themeTitle")}</h3>
+            <p>{t("settings.themeText")}</p>
+          </div>
+        </div>
+        <div
+          className="theme-options"
+          role="radiogroup"
+          aria-label={t("settings.themeTitle")}
+        >
+          {THEMES.map((id) => {
+            const meta = THEME_META[id];
+            const active = theme === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                className={`theme-option ${active ? "is-active" : ""}`}
+                onClick={() => setTheme(id)}
+              >
+                <span
+                  className="theme-swatch"
+                  style={{ background: meta.preview.bg }}
+                  aria-hidden="true"
+                >
+                  <span
+                    className="theme-swatch-card"
+                    style={{
+                      background: meta.preview.card,
+                      borderColor: meta.preview.line,
+                    }}
+                  >
+                    <span
+                      className="theme-swatch-line"
+                      style={{ background: meta.preview.line }}
+                    />
+                    <span
+                      className="theme-swatch-line is-short"
+                      style={{ background: meta.preview.accent }}
+                    />
+                  </span>
+                  <span
+                    className="theme-swatch-dot"
+                    style={{ background: meta.preview.accent }}
+                  />
+                </span>
+                <span className="theme-name">{t(`theme.${id}`)}</span>
+                {active ? (
+                  <span className="theme-check">
+                    <CheckIcon width={10} height={10} />
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="settings-section">
         <div className="settings-title">
           <GlobeIcon width={18} height={18} />

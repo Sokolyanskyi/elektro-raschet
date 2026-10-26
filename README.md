@@ -9,7 +9,8 @@ and the amount due. The history of calculations and payments is kept for years.
 
 > The interface is available in **English, Ukrainian, Polish, Chinese, and Russian**.
 > The first launch follows the browser language; you can change it in **Settings**.
-> All screenshots and the repository description use the English interface.
+> Seven colour schemes are available as well. All screenshots and the repository
+> description use the English interface.
 
 ![Calculation and payment history](docs/screenshot-desktop.png)
 
@@ -33,12 +34,17 @@ and the amount due. The history of calculations and payments is kept for years.
   it was saved, so old amounts never change retroactively. New records use the
   current default rates.
 - **Installable on a phone.** PWA manifest and icons; add it to the home screen.
-- **Light and dark themes.** Follows the system preference and adapts from 320 px up.
+- **Seven colour schemes.** Classic, Sky, Emerald, Sunset, Rose, Midnight, and
+  Graphite — five light and two dark palettes, picked in Settings. The choice is
+  remembered on the device and applied before the first paint, so a dark scheme never
+  flashes light. Colour changes cross-fade, and subtle entrance, hover, and
+  checkmark animations keep the interface lively without getting in the way.
 - **Five languages.** English, Ukrainian, Polish, Chinese, and Russian. Switch in
   Settings — the choice is remembered on the device; dates, numbers, and currency use
   locale-aware formatting.
 - **Accessible by design.** Labelled fields, keyboard-friendly dialogs, visible focus
-  states, and `role`/`aria` attributes on tabs and language choices.
+  states, `role`/`aria` attributes on tabs, language and colour-scheme choices, and
+  full `prefers-reduced-motion` support.
 
 <p align="center">
   <img src="docs/screenshot-mobile.png" alt="Mobile layout" width="320" />
@@ -51,8 +57,22 @@ Settings, applied instantly, and remembered on the device; the very first launch
 follows the browser language. Dates, month names, numbers, kWh, and currency use
 locale-aware `Intl` formatting, and server errors are translated on the client.
 
+## Colour schemes
+
+Open **Settings → Appearance** to switch between seven palettes:
+
+- **Light:** Classic (indigo), Sky (azure), Emerald (green), Sunset (warm orange),
+  Rose (pink).
+- **Dark:** Midnight (deep blue) and Graphite (near-black with lime accents).
+
+The scheme applies instantly, is saved in `localStorage`, and is restored before the
+first paint by a tiny inline script, so there is no flash of the wrong theme. Day and
+night accents stay meaningful in every palette, primary text keeps strong contrast,
+and `prefers-reduced-motion` disables the animations. On a first visit the app follows
+the system light/dark preference.
+
 <p align="center">
-  <img src="docs/screenshot-settings.png" alt="Interface language selection" width="760" />
+  <img src="docs/screenshot-settings.png" alt="Appearance, colour schemes, and interface language" width="760" />
 </p>
 
 ## How the amount is calculated
@@ -189,17 +209,18 @@ app/
   api/auth/            PIN sign-in and sign-out
   api/records/         Record CRUD and bulk import
   api/status/          Storage mode and session state
-  layout.tsx           Metadata, PWA, service worker
+  layout.tsx           Metadata, PWA, service worker, pre-paint theme script
   page.tsx             Main page
-  globals.css          Design system, responsive layout, dark theme
+  globals.css          Design system, seven colour schemes, responsive layout, animations
 components/            Form, history, record cards, settings, modals
 lib/
   calc.ts              Calculations, number parsing, validation keys
   format.ts            Locale-aware money, date, month, and number formatting
   i18n/                Five message catalogues, locale detection, translation
+  theme/               Colour scheme ids, metadata, storage, pre-paint script
   client/              localStorage, API client, hooks, export/import
   server/              Upstash REST client, sessions, PIN, record sanitization
-tests/                 Unit tests for calculations, backups, and i18n
+tests/                 Unit tests for calculations, backups, i18n, and themes
 ```
 
 ## Limitations
