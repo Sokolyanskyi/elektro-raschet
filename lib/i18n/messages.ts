@@ -285,6 +285,7 @@ const ru = {
   "confirm.importAction": "Импортировать",
 
   "toast.paid": "Оплата за {month} отмечена — дата сохранена",
+  "toast.paidDateUpdated": "Дата оплаты за {month} обновлена",
   "toast.paidError": "Не удалось отметить оплату",
   "toast.deleted": "Расчёт за {month} удалён",
   "toast.unlocked":
@@ -636,6 +637,7 @@ const uk: Record<MessageKey, string> = {
   "confirm.importAction": "Імпортувати",
 
   "toast.paid": "Оплату за {month} позначено — дату збережено",
+  "toast.paidDateUpdated": "Дату оплати за {month} оновлено",
   "toast.paidError": "Не вдалося позначити оплату",
   "toast.deleted": "Розрахунок за {month} видалено",
   "toast.unlocked":
@@ -985,6 +987,7 @@ const en: Record<MessageKey, string> = {
   "confirm.importAction": "Import",
 
   "toast.paid": "Payment for {month} marked — date saved",
+  "toast.paidDateUpdated": "Payment date for {month} updated",
   "toast.paidError": "Could not mark the payment",
   "toast.deleted": "Record for {month} deleted",
   "toast.unlocked":
@@ -1333,6 +1336,7 @@ const pl: Record<MessageKey, string> = {
   "confirm.importAction": "Importuj",
 
   "toast.paid": "Płatność za {month} oznaczona — data zapisana",
+  "toast.paidDateUpdated": "Data płatności za {month} zaktualizowana",
   "toast.paidError": "Nie udało się oznaczyć płatności",
   "toast.deleted": "Rozliczenie za {month} usunięte",
   "toast.unlocked":
@@ -1660,6 +1664,7 @@ const zh: Record<MessageKey, string> = {
   "confirm.importAction": "导入",
 
   "toast.paid": "{month} 的支付已标记——日期已保存",
+  "toast.paidDateUpdated": "{month} 的付款日期已更新",
   "toast.paidError": "无法标记支付",
   "toast.deleted": "{month} 的记录已删除",
   "toast.unlocked": "{month} 的支付已取消——记录已解锁",

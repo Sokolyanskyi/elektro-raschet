@@ -31,6 +31,13 @@ async function guard(): Promise<Guard> {
   return { env };
 }
 
+function parsePaidAt(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -44,6 +51,7 @@ export async function PATCH(
     paid?: boolean;
     paidAt?: string;
     unlock?: boolean;
+    keepPaid?: boolean;
   } | null;
 
   if (!body) {
@@ -56,11 +64,15 @@ export async function PATCH(
       return NextResponse.json({ error: "record_not_found" }, { status: 404 });
     }
 
-    if (current.paid && body.unlock !== true) {
-      return NextResponse.json(
-        { error: "record_locked" },
-        { status: 409 },
-      );
+    const isPaidEdit =
+      current.paid &&
+      (body.keepPaid === true ||
+        body.record !== undefined ||
+        typeof body.paidAt === "string" ||
+        body.paid === true);
+
+    if (current.paid && body.unlock !== true && !isPaidEdit) {
+      return NextResponse.json({ error: "record_locked" }, { status: 409 });
     }
 
     let next = { ...current };
@@ -73,13 +85,24 @@ export async function PATCH(
       changed = true;
     }
 
+    // Обновление даты оплаты (в том числе у уже оплаченной записи).
+    if (typeof body.paidAt === "string" && body.paidAt.trim()) {
+      const parsed = parsePaidAt(body.paidAt);
+      if (!parsed) {
+        return NextResponse.json({ error: "invalid_paid_at" }, { status: 400 });
+      }
+      next.paidAt = parsed;
+      if (body.paid === true || current.paid) next.paid = true;
+      changed = true;
+    }
+
     if (body.record) {
       const candidate = sanitizeRecord(
         {
           ...(body.record as Record<string, unknown>),
           id,
-          paid: false,
-          paidAt: null,
+          paid: current.paid,
+          paidAt: next.paidAt,
           createdAt: current.createdAt,
           updatedAt: now,
         },
@@ -97,18 +120,33 @@ export async function PATCH(
         );
       }
 
-      next = { ...candidate, paid: false, paidAt: null };
+      if (current.paid) {
+        next = {
+          ...next,
+          period: candidate.period,
+          dayPrev: candidate.dayPrev,
+          nightPrev: candidate.nightPrev,
+          dayCurr: candidate.dayCurr,
+          nightCurr: candidate.nightCurr,
+          dayRate: candidate.dayRate,
+          nightRate: candidate.nightRate,
+          enteredAt: candidate.enteredAt,
+          note: candidate.note,
+        };
+      } else {
+        next = { ...candidate, paid: false, paidAt: null };
+      }
       changed = true;
     }
 
     if (body.paid === true && !next.paid) {
       let paidAt = now;
       if (typeof body.paidAt === "string" && body.paidAt.trim()) {
-        const parsed = new Date(body.paidAt);
-        if (Number.isNaN(parsed.getTime())) {
+        const parsed = parsePaidAt(body.paidAt);
+        if (!parsed) {
           return NextResponse.json({ error: "invalid_paid_at" }, { status: 400 });
         }
-        paidAt = parsed.toISOString();
+        paidAt = parsed;
       }
       next.paid = true;
       next.paidAt = paidAt;

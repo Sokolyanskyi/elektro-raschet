@@ -160,10 +160,6 @@ export function AppShell() {
   );
 
   const beginEdit = (record: MeterRecord) => {
-    if (record.paid) {
-      notify(t("toast.editPaid"), "error");
-      return;
-    }
     setEditingId(record.id);
     window.setTimeout(() => {
       document.getElementById("calculator")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -177,6 +173,15 @@ export function AppShell() {
       downloadFile(receiptFileName(updated), html, "text/html;charset=utf-8");
       setReceiptRecord(updated);
       notify(t("receipt.saved", { month: monthLabel(updated.period, locale) }));
+    } catch (cause) {
+      notify(cause instanceof Error ? cause.message : t("toast.paidError"), "error");
+    }
+  };
+
+  const updatePaidDate = async (record: MeterRecord, paidOn: string) => {
+    try {
+      const updated = await store.setPaid(record.id, true, paidAtFromDate(paidOn));
+      notify(t("toast.paidDateUpdated", { month: monthLabel(updated.period, locale) }));
     } catch (cause) {
       notify(cause instanceof Error ? cause.message : t("toast.paidError"), "error");
     }
@@ -637,6 +642,7 @@ export function AppShell() {
             onMarkPaid={(record, paidOn) => void markPaid(record, paidOn)}
             onUnlock={(record) => setConfirm({ kind: "unlock", record })}
             onReceipt={setReceiptRecord}
+            onUpdatePaidDate={(record, paidOn) => void updatePaidDate(record, paidOn)}
           />
         </main>
 

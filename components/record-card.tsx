@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { calculateUsage } from "@/lib/calc";
 import {
   formatDate,
@@ -31,6 +31,7 @@ interface RecordCardProps {
   onMarkPaid: (record: MeterRecord, paidOn: string) => void;
   onUnlock: (record: MeterRecord) => void;
   onReceipt: (record: MeterRecord) => void;
+  onUpdatePaidDate: (record: MeterRecord, paidOn: string) => void;
 }
 
 export function RecordCard({
@@ -41,11 +42,19 @@ export function RecordCard({
   onMarkPaid,
   onUnlock,
   onReceipt,
+  onUpdatePaidDate,
 }: RecordCardProps) {
   const { locale, t } = useI18n();
   const usage = calculateUsage(record);
   const status = record.paid ? t("side.statusPaid") : t("side.statusUnpaid");
   const [payDate, setPayDate] = useState(todayISO());
+  const [paidDate, setPaidDate] = useState(
+    record.paidAt ? record.paidAt.slice(0, 10) : todayISO(),
+  );
+
+  useEffect(() => {
+    if (record.paidAt) setPaidDate(record.paidAt.slice(0, 10));
+  }, [record.paidAt]);
 
   return (
     <article className={`record ${record.paid ? "is-paid" : "is-unpaid"}`}>
@@ -157,11 +166,35 @@ export function RecordCard({
               onChange={(event) => setPayDate(event.target.value)}
             />
           </label>
-        ) : null}
+        ) : (
+          <label className="pay-date">
+            <span>{t("record.paymentDate")}</span>
+            <input
+              type="date"
+              value={paidDate}
+              max={todayISO()}
+              disabled={busy}
+              onChange={(event) => {
+                const next = event.target.value;
+                setPaidDate(next);
+                if (next) onUpdatePaidDate(record, next);
+              }}
+            />
+          </label>
+        )}
 
         <div className="record-actions">
           {record.paid ? (
             <>
+              <button
+                type="button"
+                className="mini-btn"
+                onClick={() => onEdit(record)}
+                disabled={busy}
+              >
+                <PencilIcon width={15} height={15} />
+                {t("record.edit")}
+              </button>
               <button
                 type="button"
                 className="mini-btn mini-receipt"

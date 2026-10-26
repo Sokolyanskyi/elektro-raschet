@@ -148,7 +148,12 @@ export function useRecords(): RecordsStore {
       withBusy(async (): Promise<MeterRecord> => {
         if (mode === "cloud") {
           if (editingId) {
-            const updated = await updateCloudRecord(editingId, { record: draft });
+            const currentRecord = records.find((record) => record.id === editingId);
+            const isPaid = currentRecord?.paid === true;
+            const updated = await updateCloudRecord(editingId, {
+              record: draft,
+              ...(isPaid ? { keepPaid: true } : {}),
+            });
             setRecords((current) =>
               sortRecords(current.map((record) => (record.id === updated.id ? updated : record))),
             );
@@ -167,14 +172,19 @@ export function useRecords(): RecordsStore {
         if (editingId) {
           const current = records.find((record) => record.id === editingId);
           if (!current) throw new Error(tNow("error.recordNotFound"));
-          if (current.paid) {
-            throw new Error(tNow("error.paidLocked"));
-          }
-          const updated: MeterRecord = {
-            ...current,
-            ...draft,
-            updatedAt: now,
-          };
+          const updated: MeterRecord = current.paid
+            ? {
+                ...current,
+                ...draft,
+                paid: true,
+                paidAt: current.paidAt,
+                updatedAt: now,
+              }
+            : {
+                ...current,
+                ...draft,
+                updatedAt: now,
+              };
           const next = records.map((record) => (record.id === editingId ? updated : record));
           saveLocalRecords(next);
           setRecords(sortRecords(next));

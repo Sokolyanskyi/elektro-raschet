@@ -28,6 +28,7 @@ interface HistoryProps {
   onMarkPaid: (record: MeterRecord, paidOn: string) => void;
   onUnlock: (record: MeterRecord) => void;
   onReceipt: (record: MeterRecord) => void;
+  onUpdatePaidDate: (record: MeterRecord, paidOn: string) => void;
 }
 
 export function History({
@@ -43,6 +44,7 @@ export function History({
   onMarkPaid,
   onUnlock,
   onReceipt,
+  onUpdatePaidDate,
 }: HistoryProps) {
   const { locale, t } = useI18n();
   const years = Array.from(new Set(records.map((record) => yearOf(record.period))));
@@ -332,6 +334,7 @@ export function History({
                       onMarkPaid={onMarkPaid}
                       onUnlock={onUnlock}
                       onReceipt={onReceipt}
+                      onUpdatePaidDate={onUpdatePaidDate}
                     />
                   ))}
                 </div>
