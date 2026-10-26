@@ -41,7 +41,7 @@ export interface RecordsStore {
   localCount: number;
   refresh: () => Promise<void>;
   save: (draft: RecordDraft, editingId?: string) => Promise<MeterRecord>;
-  setPaid: (id: string, paid: boolean) => Promise<void>;
+  setPaid: (id: string, paid: boolean, paidAt?: string) => Promise<MeterRecord>;
   remove: (id: string) => Promise<void>;
   importRecords: (records: MeterRecord[], settings?: Settings | null) => Promise<{
     added: number;
@@ -198,32 +198,36 @@ export function useRecords(): RecordsStore {
   );
 
   const setPaid = useCallback(
-    (id: string, paid: boolean) =>
+    (id: string, paid: boolean, paidAt?: string) =>
       withBusy(async () => {
         if (mode === "cloud") {
-          const updated = await updateCloudRecord(id, paid ? { paid: true } : { unlock: true });
+          const updated = await updateCloudRecord(
+            id,
+            paid ? { paid: true, paidAt } : { unlock: true },
+          );
           setRecords((current) =>
             sortRecords(current.map((record) => (record.id === updated.id ? updated : record))),
           );
-          return;
+          return updated;
         }
 
         if (mode !== "local") throw new Error(tNow("error.storageUnavailable"));
         const now = new Date().toISOString();
-        let found = false;
+        let updated: MeterRecord | null = null;
         const next = records.map((record) => {
           if (record.id !== id) return record;
-          found = true;
-          return {
+          updated = {
             ...record,
             paid,
-            paidAt: paid ? now : null,
+            paidAt: paid ? (paidAt ?? now) : null,
             updatedAt: now,
           };
+          return updated;
         });
-        if (!found) throw new Error(tNow("error.recordNotFound"));
+        if (!updated) throw new Error(tNow("error.recordNotFound"));
         saveLocalRecords(next);
         setRecords(sortRecords(next));
+        return updated;
       }),
     [mode, records, withBusy],
   );

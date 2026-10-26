@@ -6,6 +6,7 @@ import {
   formatMoney,
   monthLabel,
   monthName,
+  paidAtFromDate,
   toInputValue,
 } from "../lib/format";
 import {
@@ -84,6 +85,18 @@ describe("localised formatting", () => {
     expect(toInputValue(1234.5, "en")).toBe("1234.5");
     expect(toInputValue(1234.5, "ru")).toBe("1234,5");
     expect(toInputValue(1234.5, "pl")).toBe("1234,5");
+  });
+
+  it("keeps the picked payment date on the same calendar day", () => {
+    const paidAt = paidAtFromDate("2026-10-05");
+    expect(Number.isNaN(Date.parse(paidAt))).toBe(false);
+    expect(formatDate(paidAt, "en")).toBe("05/10/2026");
+    expect(formatDate(paidAtFromDate("2021-01-01"), "uk")).toBe("01.01.2021");
+  });
+
+  it("falls back to a valid timestamp for a malformed payment date", () => {
+    const paidAt = paidAtFromDate("not-a-date");
+    expect(Number.isNaN(Date.parse(paidAt))).toBe(false);
   });
 });
 

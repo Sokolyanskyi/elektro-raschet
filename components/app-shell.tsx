@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { calculateUsage } from "@/lib/calc";
 import { parseBackup } from "@/lib/client/backup";
-import { downloadCsv, downloadJson, readJsonFile, type BackupFile } from "@/lib/client/download";
+import {
+  downloadCsv,
+  downloadFile,
+  downloadJson,
+  readJsonFile,
+  type BackupFile,
+} from "@/lib/client/download";
 import { useRecords } from "@/lib/client/use-records";
 import {
   currentPeriod,
@@ -12,10 +18,16 @@ import {
   formatMoneyPlain,
   formatNumber,
   monthLabel,
+  paidAtFromDate,
   todayISO,
   yearOf,
 } from "@/lib/format";
 import type { MeterRecord, RecordDraft, Settings } from "@/lib/types";
+import {
+  buildReceiptHtml,
+  receiptFileName,
+  receiptLabels,
+} from "@/lib/receipt";
 import { History } from "./history";
 import { useI18n } from "./i18n-provider";
 import {
@@ -31,6 +43,7 @@ import {
 import { LockScreen } from "./lock-screen";
 import { ConfirmDialog } from "./modal";
 import { RecordForm } from "./record-form";
+import { ReceiptDialog } from "./receipt-dialog";
 import { SettingsDialog } from "./settings-dialog";
 
 type ConfirmState =
@@ -54,8 +67,10 @@ export function AppShell() {
   const store = useRecords();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | "all">(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [receiptRecord, setReceiptRecord] = useState<MeterRecord | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
   const initialYearApplied = useRef(false);
 
@@ -84,36 +99,38 @@ export function AppShell() {
   const stats = useMemo(() => {
     let debt = 0;
     let unpaidCount = 0;
-    let paidYear = 0;
-    let paidCount = 0;
-    let usageYear = 0;
-    let recordsYear = 0;
 
     for (const record of store.records) {
-      const usage = calculateUsage(record);
       if (!record.paid) {
+        const usage = calculateUsage(record);
         debt += usage.total;
         unpaidCount += 1;
-      }
-      if (yearOf(record.period) === currentYear) {
-        recordsYear += 1;
-        usageYear += usage.totalUsage;
-        if (record.paid) {
-          paidYear += usage.total;
-          paidCount += 1;
-        }
       }
     }
 
     return {
       debt: Math.round(debt * 100) / 100,
       unpaidCount,
-      paidYear: Math.round(paidYear * 100) / 100,
-      paidCount,
-      usageYear: Math.round(usageYear * 100) / 100,
-      recordsYear,
     };
-  }, [store.records, currentYear]);
+  }, [store.records]);
+
+  const activeMonthRecord = useMemo(() => {
+    const chosen = selectedMonth
+      ? store.records.find((record) => record.period === selectedMonth)
+      : null;
+    if (chosen && (selectedYear === "all" || yearOf(chosen.period) === selectedYear)) {
+      return chosen;
+    }
+    return (
+      store.records.find(
+        (record) => selectedYear === "all" || yearOf(record.period) === selectedYear,
+      ) ?? null
+    );
+  }, [selectedMonth, selectedYear, store.records]);
+
+  const activeMonthUsage = activeMonthRecord
+    ? calculateUsage(activeMonthRecord)
+    : null;
 
   const latest = store.records[0] ?? null;
   const latestUsage = latest ? calculateUsage(latest) : null;
@@ -135,6 +152,7 @@ export function AppShell() {
     async (draft: RecordDraft, recordId?: string) => {
       const saved = await store.save(draft, recordId);
       setSelectedYear(yearOf(saved.period));
+      setSelectedMonth(saved.period);
       if (recordId) setEditingId(null);
       return saved;
     },
@@ -152,10 +170,13 @@ export function AppShell() {
     }, 30);
   };
 
-  const markPaid = async (record: MeterRecord) => {
+  const markPaid = async (record: MeterRecord, paidOn: string) => {
     try {
-      await store.setPaid(record.id, true);
-      notify(t("toast.paid", { month: monthLabel(record.period, locale) }));
+      const updated = await store.setPaid(record.id, true, paidAtFromDate(paidOn));
+      const html = buildReceiptHtml(updated, locale, receiptLabels(t, updated));
+      downloadFile(receiptFileName(updated), html, "text/html;charset=utf-8");
+      setReceiptRecord(updated);
+      notify(t("receipt.saved", { month: monthLabel(updated.period, locale) }));
     } catch (cause) {
       notify(cause instanceof Error ? cause.message : t("toast.paidError"), "error");
     }
@@ -448,19 +469,29 @@ export function AppShell() {
                 </span>
               </div>
               <div className="stat">
-                <span className="stat-label">{t("stats.paidForYear", { year: currentYear })}</span>
-                <b className="stat-value">{formatMoney(stats.paidYear, locale)}</b>
+                <span className="stat-label">{t("stats.monthUsage")}</span>
+                <b className="stat-value">
+                  {activeMonthUsage ? formatKwh(activeMonthUsage.totalUsage, locale) : "—"}
+                </b>
                 <span className="stat-sub">
-                  {stats.paidCount > 0
-                    ? t("stats.payments", { count: stats.paidCount })
-                    : t("stats.noPayments")}
+                  {activeMonthRecord
+                    ? monthLabel(activeMonthRecord.period, locale)
+                    : t("stats.noData")}
                 </span>
               </div>
               <div className="stat">
-                <span className="stat-label">{t("stats.usageForYear", { year: currentYear })}</span>
-                <b className="stat-value">{formatNumber(stats.usageYear, locale)}</b>
+                <span className="stat-label">{t("stats.monthPaid")}</span>
+                <b className="stat-value">
+                  {activeMonthUsage && activeMonthRecord
+                    ? formatMoney(activeMonthRecord.paid ? activeMonthUsage.total : 0, locale)
+                    : "—"}
+                </b>
                 <span className="stat-sub">
-                  {t("stats.usageSub", { count: stats.recordsYear })}
+                  {activeMonthRecord
+                    ? activeMonthRecord.paid
+                      ? t("side.statusPaid")
+                      : t("side.statusUnpaid")
+                    : t("stats.noData")}
                 </span>
               </div>
             </div>
@@ -593,13 +624,19 @@ export function AppShell() {
           <History
             records={store.records}
             selectedYear={selectedYear}
+            selectedMonth={activeMonthRecord?.period ?? null}
             currentYear={currentYear}
             busy={store.busy}
-            onSelectYear={setSelectedYear}
+            onSelectYear={(year) => {
+              setSelectedYear(year);
+              setSelectedMonth(null);
+            }}
+            onSelectMonth={setSelectedMonth}
             onEdit={beginEdit}
             onDelete={(record) => setConfirm({ kind: "delete", record })}
-            onMarkPaid={(record) => void markPaid(record)}
+            onMarkPaid={(record, paidOn) => void markPaid(record, paidOn)}
             onUnlock={(record) => setConfirm({ kind: "unlock", record })}
+            onReceipt={setReceiptRecord}
           />
         </main>
 
@@ -655,6 +692,8 @@ export function AppShell() {
         onConfirm={() => void handleConfirm()}
         onClose={() => setConfirm(null)}
       />
+
+      <ReceiptDialog record={receiptRecord} onClose={() => setReceiptRecord(null)} />
 
       {toast ? (
         <div

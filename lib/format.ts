@@ -208,6 +208,16 @@ export function todayISO(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
+/**
+ * Превращает выбранную пользователем дату (YYYY-MM-DD) в ISO-метку.
+ * Полдень по локальному времени не даёт дате сдвинуться при показе.
+ */
+export function paidAtFromDate(value: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date().toISOString();
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+}
+
 /** Текущий расчётный месяц, например «2026-10». */
 export function currentPeriod(): string {
   return todayISO().slice(0, 7);

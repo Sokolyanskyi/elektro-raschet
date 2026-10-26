@@ -87,6 +87,7 @@ export async function updateCloudRecord(
       "id" | "paid" | "paidAt" | "createdAt" | "updatedAt"
     >;
     paid?: boolean;
+    paidAt?: string;
     unlock?: boolean;
   },
 ): Promise<MeterRecord> {

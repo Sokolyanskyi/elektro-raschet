@@ -42,6 +42,7 @@ export async function PATCH(
   const body = (await request.json().catch(() => null)) as {
     record?: unknown;
     paid?: boolean;
+    paidAt?: string;
     unlock?: boolean;
   } | null;
 
@@ -101,8 +102,16 @@ export async function PATCH(
     }
 
     if (body.paid === true && !next.paid) {
+      let paidAt = now;
+      if (typeof body.paidAt === "string" && body.paidAt.trim()) {
+        const parsed = new Date(body.paidAt);
+        if (Number.isNaN(parsed.getTime())) {
+          return NextResponse.json({ error: "invalid_paid_at" }, { status: 400 });
+        }
+        paidAt = parsed.toISOString();
+      }
       next.paid = true;
-      next.paidAt = now;
+      next.paidAt = paidAt;
       changed = true;
     }
 

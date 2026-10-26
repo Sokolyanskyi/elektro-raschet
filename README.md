@@ -21,11 +21,15 @@ and the amount due. The history of calculations and payments is kept for years.
 - **Instant calculation.** Day usage, night usage, the total amount, and the
   day/night breakdown update as you type.
 - **Reading entry date.** Saved together with every calculation.
-- **One-click payment.** The “Mark as paid” checkbox records the actual payment date
-  and locks itself. A paid record cannot be edited or deleted until you explicitly
-  choose “Cancel payment”.
-- **Multi-year history.** Filter by year, see yearly totals (usage, charged, paid,
-  debt), and a monthly charges chart. Records are never removed automatically.
+- **Payment date and receipt.** Pick the actual payment date, confirm the payment, and
+  the app saves the bill and generates an electronic receipt. The receipt is downloaded
+  automatically and can be reopened from the month details or the record card, then
+  downloaded again or printed to PDF. A paid record cannot be edited or deleted until
+  you explicitly choose “Cancel payment”.
+- **Multi-year history.** Filter by year and see yearly totals (usage, charged, paid,
+  debt). The monthly charges chart is interactive: tap a bar to inspect that month’s
+  usage, amount, payment status, day/night split, and receipt. Records are never removed
+  automatically.
 - **Same data on every device.** Local mode works out of the box; cloud mode syncs
   history between phone and computer after entering a PIN.
 - **Backups.** Export to JSON or CSV (Excel-friendly), import JSON with duplicate-safe
@@ -48,6 +52,17 @@ and the amount due. The history of calculations and payments is kept for years.
 
 <p align="center">
   <img src="docs/screenshot-mobile.png" alt="Mobile layout" width="320" />
+</p>
+
+## Receipts
+
+Every payment produces an electronic receipt with the billing month, payment date,
+day/night readings, tariff rates, and the amount paid. The HTML file is saved
+automatically; it can also be reopened from the history, downloaded again, or printed
+to PDF.
+
+<p align="center">
+  <img src="docs/screenshot-receipt.png" alt="Electronic payment receipt" width="760" />
 </p>
 
 ## Languages

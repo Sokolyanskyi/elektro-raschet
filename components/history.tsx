@@ -2,6 +2,7 @@
 
 import { calculateUsage } from "@/lib/calc";
 import {
+  formatDate,
   formatKwh,
   formatMoney,
   formatNumber,
@@ -11,31 +12,37 @@ import {
 } from "@/lib/format";
 import type { MeterRecord } from "@/lib/types";
 import { useI18n } from "./i18n-provider";
-import { ChartIcon, PlusIcon } from "./icons";
+import { ChartIcon, MoonIcon, PlusIcon, ReceiptIcon, SunIcon } from "./icons";
 import { RecordCard } from "./record-card";
 
 interface HistoryProps {
   records: MeterRecord[];
   selectedYear: number | "all";
+  selectedMonth: string | null;
   currentYear: number;
   busy: boolean;
   onSelectYear: (year: number | "all") => void;
+  onSelectMonth: (period: string) => void;
   onEdit: (record: MeterRecord) => void;
   onDelete: (record: MeterRecord) => void;
-  onMarkPaid: (record: MeterRecord) => void;
+  onMarkPaid: (record: MeterRecord, paidOn: string) => void;
   onUnlock: (record: MeterRecord) => void;
+  onReceipt: (record: MeterRecord) => void;
 }
 
 export function History({
   records,
   selectedYear,
+  selectedMonth,
   currentYear,
   busy,
   onSelectYear,
+  onSelectMonth,
   onEdit,
   onDelete,
   onMarkPaid,
   onUnlock,
+  onReceipt,
 }: HistoryProps) {
   const { locale, t } = useI18n();
   const years = Array.from(new Set(records.map((record) => yearOf(record.period))));
@@ -61,15 +68,22 @@ export function History({
 
   const chartYear = selectedYear === "all" ? null : selectedYear;
   const monthly = Array.from({ length: 12 }, () => 0);
+  const monthlyRecords: Array<MeterRecord | null> = Array.from({ length: 12 }, () => null);
   if (chartYear) {
     for (const record of records) {
       if (yearOf(record.period) === chartYear) {
         const month = Number(record.period.slice(5, 7));
         monthly[month - 1] += calculateUsage(record).total;
+        monthlyRecords[month - 1] = record;
       }
     }
   }
   const maxMonthly = Math.max(...monthly, 1);
+
+  const selectedRecord = selectedMonth
+    ? records.find((record) => record.period === selectedMonth) ?? null
+    : null;
+  const selectedUsage = selectedRecord ? calculateUsage(selectedRecord) : null;
 
   const groups: Array<{ year: number; records: MeterRecord[] }> = [];
   for (const record of filtered) {
@@ -145,6 +159,130 @@ export function History({
         </div>
       ) : (
         <>
+          {chartYear ? (
+            <div className="chart">
+              <div className="chart-head">
+                <div className="chart-head-title">
+                  <span>{t("history.chartTitle", { year: chartYear })}</span>
+                  <small>{t("history.chartHint")}</small>
+                </div>
+                <span>{formatMoney(totals.total, locale)}</span>
+              </div>
+              <div className="chart-bars">
+                {monthly.map((value, index) => {
+                  const monthRecord = monthlyRecords[index];
+                  const active = monthRecord !== null && monthRecord.period === selectedMonth;
+                  const label = monthShortLabel(index + 1, locale);
+                  const detail = monthRecord
+                    ? `${monthLabel(monthRecord.period, locale)}: ${formatKwh(
+                        calculateUsage(monthRecord).totalUsage,
+                        locale,
+                      )}, ${formatMoney(value, locale)}`
+                    : label;
+                  return (
+                    <div className="chart-col" key={index}>
+                      <div className="chart-bar-track">
+                        {monthRecord ? (
+                          <button
+                            type="button"
+                            className={`chart-bar-btn ${active ? "is-active" : ""}`}
+                            aria-pressed={active}
+                            aria-label={detail}
+                            title={detail}
+                            onClick={() => onSelectMonth(monthRecord.period)}
+                          >
+                            <span
+                              className="chart-bar has-value"
+                              style={{
+                                height: `${
+                                  value > 0 ? Math.max(6, (value / maxMonthly) * 100) : 3
+                                }%`,
+                              }}
+                            />
+                          </button>
+                        ) : (
+                          <span className="chart-bar-spacer" aria-hidden="true" />
+                        )}
+                      </div>
+                      <span className={`chart-label ${monthRecord ? "has-value" : ""}`}>
+                        {label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {selectedRecord && selectedUsage ? (
+                <div className="chart-detail" aria-live="polite">
+                  <div className="chart-detail-head">
+                    <div>
+                      <b>{monthLabel(selectedRecord.period, locale)}</b>
+                      <small>
+                        {t("record.dataFrom", {
+                          date: formatDate(selectedRecord.enteredAt, locale),
+                        })}
+                      </small>
+                    </div>
+                    <div className="chart-detail-head-actions">
+                      {selectedRecord.paid ? (
+                        <button
+                          type="button"
+                          className="mini-btn mini-receipt"
+                          onClick={() => onReceipt(selectedRecord)}
+                        >
+                          <ReceiptIcon width={14} height={14} />
+                          {t("receipt.open")}
+                        </button>
+                      ) : null}
+                      <span
+                        className={`status ${
+                          selectedRecord.paid ? "status-paid" : "status-unpaid"
+                        }`}
+                      >
+                        {selectedRecord.paid ? t("side.statusPaid") : t("side.statusUnpaid")}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="chart-detail-grid">
+                    <div>
+                      <span>{t("history.usage")}</span>
+                      <b>{formatKwh(selectedUsage.totalUsage, locale)}</b>
+                    </div>
+                    <div>
+                      <span>{t("history.charged")}</span>
+                      <b>{formatMoney(selectedUsage.total, locale)}</b>
+                    </div>
+                    <div>
+                      <span>{t("history.paid")}</span>
+                      <b className={selectedRecord.paid ? "value-paid" : "value-zero"}>
+                        {formatMoney(selectedRecord.paid ? selectedUsage.total : 0, locale)}
+                      </b>
+                    </div>
+                  </div>
+                  <div className="chart-detail-split">
+                    <span>
+                      <SunIcon width={13} height={13} />
+                      {t("common.day")} · {formatKwh(selectedUsage.dayUsage, locale)} ·{" "}
+                      {formatMoney(selectedUsage.dayCost, locale)}
+                    </span>
+                    <span>
+                      <MoonIcon width={13} height={13} />
+                      {t("common.night")} · {formatKwh(selectedUsage.nightUsage, locale)} ·{" "}
+                      {formatMoney(selectedUsage.nightCost, locale)}
+                    </span>
+                  </div>
+                  {selectedRecord.paid && selectedRecord.paidAt ? (
+                    <p className="chart-detail-note">
+                      {t("history.paidOn", {
+                        date: formatDate(selectedRecord.paidAt, locale),
+                      })}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="year-summary">
             <div className="year-summary-item">
               <span>{t("history.usage")}</span>
@@ -165,31 +303,6 @@ export function History({
               </b>
             </div>
           </div>
-
-          {chartYear ? (
-            <div className="chart">
-              <div className="chart-head">
-                <span>{t("history.chartTitle", { year: chartYear })}</span>
-                <span>{formatMoney(totals.total, locale)}</span>
-              </div>
-              <div className="chart-bars">
-                {monthly.map((value, index) => (
-                  <div className="chart-col" key={index}>
-                    <div className="chart-bar-track">
-                      <div
-                        className={`chart-bar ${value > 0 ? "has-value" : ""}`}
-                        style={{ height: `${value > 0 ? Math.max(6, (value / maxMonthly) * 100) : 0}%` }}
-                        title={`${monthShortLabel(index + 1, locale)}: ${formatMoney(value, locale)}`}
-                      />
-                    </div>
-                    <span className={`chart-label ${value > 0 ? "has-value" : ""}`}>
-                      {monthShortLabel(index + 1, locale)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
 
           <div className="record-groups">
             {groups.map((group) => (
@@ -218,6 +331,7 @@ export function History({
                       onDelete={onDelete}
                       onMarkPaid={onMarkPaid}
                       onUnlock={onUnlock}
+                      onReceipt={onReceipt}
                     />
                   ))}
                 </div>

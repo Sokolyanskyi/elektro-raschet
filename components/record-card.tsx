@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { calculateUsage } from "@/lib/calc";
 import {
   formatDate,
@@ -8,6 +9,7 @@ import {
   formatMoney,
   formatNumber,
   monthLabel,
+  todayISO,
 } from "@/lib/format";
 import type { MeterRecord } from "@/lib/types";
 import { useI18n } from "./i18n-provider";
@@ -15,6 +17,7 @@ import {
   CheckIcon,
   MoonIcon,
   PencilIcon,
+  ReceiptIcon,
   SunIcon,
   TrashIcon,
   UndoIcon,
@@ -25,8 +28,9 @@ interface RecordCardProps {
   busy: boolean;
   onEdit: (record: MeterRecord) => void;
   onDelete: (record: MeterRecord) => void;
-  onMarkPaid: (record: MeterRecord) => void;
+  onMarkPaid: (record: MeterRecord, paidOn: string) => void;
   onUnlock: (record: MeterRecord) => void;
+  onReceipt: (record: MeterRecord) => void;
 }
 
 export function RecordCard({
@@ -36,10 +40,12 @@ export function RecordCard({
   onDelete,
   onMarkPaid,
   onUnlock,
+  onReceipt,
 }: RecordCardProps) {
   const { locale, t } = useI18n();
   const usage = calculateUsage(record);
   const status = record.paid ? t("side.statusPaid") : t("side.statusUnpaid");
+  const [payDate, setPayDate] = useState(todayISO());
 
   return (
     <article className={`record ${record.paid ? "is-paid" : "is-unpaid"}`}>
@@ -124,7 +130,7 @@ export function RecordCard({
             checked={record.paid}
             disabled={record.paid || busy}
             onChange={() => {
-              if (!record.paid) onMarkPaid(record);
+              if (!record.paid) onMarkPaid(record, payDate);
             }}
           />
           <span className="pay-box">
@@ -135,22 +141,46 @@ export function RecordCard({
             <small>
               {record.paid
                 ? formatDateTime(record.paidAt, locale)
-                : t("record.payDateAuto")}
+                : t("record.payDateHint")}
             </small>
           </span>
         </label>
 
+        {!record.paid ? (
+          <label className="pay-date">
+            <span>{t("record.paymentDate")}</span>
+            <input
+              type="date"
+              value={payDate}
+              max={todayISO()}
+              disabled={busy}
+              onChange={(event) => setPayDate(event.target.value)}
+            />
+          </label>
+        ) : null}
+
         <div className="record-actions">
           {record.paid ? (
-            <button
-              type="button"
-              className="mini-btn"
-              onClick={() => onUnlock(record)}
-              disabled={busy}
-            >
-              <UndoIcon width={15} height={15} />
-              {t("record.unlock")}
-            </button>
+            <>
+              <button
+                type="button"
+                className="mini-btn mini-receipt"
+                onClick={() => onReceipt(record)}
+                disabled={busy}
+              >
+                <ReceiptIcon width={15} height={15} />
+                {t("receipt.open")}
+              </button>
+              <button
+                type="button"
+                className="mini-btn"
+                onClick={() => onUnlock(record)}
+                disabled={busy}
+              >
+                <UndoIcon width={15} height={15} />
+                {t("record.unlock")}
+              </button>
+            </>
           ) : (
             <>
               <button
