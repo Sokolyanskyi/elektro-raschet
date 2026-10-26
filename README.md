@@ -1,145 +1,148 @@
-# Электроэнергия — расчёт и оплата
+# Electricity — usage and payments
 
-Онлайн-калькулятор оплаты за электроэнергию по двум тарифам: **день** и **ночь**.
-Вносите показания счётчика за прошлый и текущий месяц, приложение считает расход
-в кВт·ч и сумму к оплате, а история расчётов и оплат хранится годами.
+An online calculator for electricity bills with **day** and **night** tariffs. Enter
+your previous and current meter readings, and the app calculates consumption in kWh
+and the amount due. The history of calculations and payments is kept for years.
 
-**Приложение:** https://elektro-raschet.vercel.app (вход по PIN владельца)  
-**Репозиторий:** https://github.com/Sokolyanskyi/elektro-raschet
+**Live app:** https://elektro-raschet.vercel.app (owner PIN required)  
+**Repository:** https://github.com/Sokolyanskyi/elektro-raschet
 
-![Расчёт и история оплат](docs/screenshot-desktop.png)
+> The application interface is in Russian; this README is in English.
 
-## Возможности
+![Calculation and payment history](docs/screenshot-desktop.png)
 
-- **Два тарифа.** По умолчанию день — 4,60 ₴/кВт·ч, ночь — 2,30 ₴/кВт·ч; тарифы можно
-  изменить в настройках или прямо в форме расчёта.
-- **Автоматический расчёт.** Расход по каждому тарифу, общая сумма и разбивка
-  «день / ночь» пересчитываются сразу при вводе показаний.
-- **Дата внесения показаний.** Сохраняется вместе с расчётом.
-- **Оплата в один клик.** Чекбокс «Отметить оплату» фиксирует фактическую дату и
-  блокируется. Оплаченный расчёт нельзя изменить или удалить, пока вы явно не
-  нажмёте «Отменить оплату».
-- **История за годы.** Фильтр по годам, итоги за год (расход, начислено, оплачено,
-  долг), график начислений по месяцам. Записи не удаляются автоматически.
-- **Данные на всех устройствах.** Локальный режим работает сразу, облачный —
-  синхронизирует историю между телефоном и компьютером после ввода PIN-кода.
-- **Резервные копии.** Экспорт в JSON и CSV (для Excel), импорт JSON с объединением
-  без дублей.
-- **Тарифы не «переписывают» историю.** Каждый расчёт хранит тарифы, действовавшие
-  на момент сохранения, поэтому старые суммы никогда не меняются задним числом.
-  Новые расчёты используют текущие тарифы по умолчанию.
-- **Установка на телефон.** PWA-манифест и иконки: можно добавить на домашний экран.
-- **Светлая и тёмная тема.** Автоматически по настройкам системы, адаптивно от 320 px.
+## Features
+
+- **Two tariffs.** Defaults are 4.60 ₴/kWh for day and 2.30 ₴/kWh for night. Rates can
+  be changed in Settings or directly in the calculation form.
+- **Instant calculation.** Day usage, night usage, the total amount, and the
+  day/night breakdown update as you type.
+- **Reading entry date.** Saved together with every calculation.
+- **One-click payment.** The “Mark as paid” checkbox records the actual payment date
+  and locks itself. A paid record cannot be edited or deleted until you explicitly
+  choose “Cancel payment”.
+- **Multi-year history.** Filter by year, see yearly totals (usage, charged, paid,
+  debt), and a monthly charges chart. Records are never removed automatically.
+- **Same data on every device.** Local mode works out of the box; cloud mode syncs
+  history between phone and computer after entering a PIN.
+- **Backups.** Export to JSON or CSV (Excel-friendly), import JSON with duplicate-safe
+  merging.
+- **Historical rates are preserved.** Every record snapshots the rates in effect when
+  it was saved, so old amounts never change retroactively. New records use the
+  current default rates.
+- **Installable on a phone.** PWA manifest and icons; add it to the home screen.
+- **Light and dark themes.** Follows the system preference and adapts from 320 px up.
 
 <p align="center">
-  <img src="docs/screenshot-mobile.png" alt="Мобильная версия" width="320" />
+  <img src="docs/screenshot-mobile.png" alt="Mobile layout" width="320" />
 </p>
 
-## Как считается
+## How the amount is calculated
 
-Для каждого тарифа:
+For each tariff:
 
 ```
-расход = показание «этот месяц» − показание «прошлый месяц»
-сумма  = расход × тариф
-итого  = сумма за день + сумма за ночь
+usage = current reading − previous reading
+cost  = usage × rate
+total = day cost + night cost
 ```
 
-Пример: день 1 000 → 1 180 кВт·ч (180 кВт·ч × 4,60 ₴ = 828,00 ₴),
-ночь 500 → 530 кВт·ч (30 кВт·ч × 2,30 ₴ = 69,00 ₴). **Итого: 897,00 ₴.**
+Example: day 1,000 → 1,180 kWh (180 kWh × 4.60 ₴ = 828.00 ₴), night 500 → 530 kWh
+(30 kWh × 2.30 ₴ = 69.00 ₴). **Total: 897.00 ₴.**
 
-Округление — до копеек. В одном расчётном месяце может быть только одна запись.
+Amounts are rounded to the nearest kopeck. Only one record per billing month is
+allowed.
 
-## Технологии
+## Tech stack
 
 - [Next.js 16](https://nextjs.org/) (App Router, Turbopack) + React 19 + TypeScript
-- Собственный CSS без внешних UI-библиотек и веб-шрифтов
-- Vitest для юнит-тестов
-- Vercel KV / Upstash Redis (REST) для облачного режима — опционально
+- Hand-written CSS with no external UI libraries or web fonts
+- Vitest for unit tests
+- Vercel KV / Upstash Redis (REST) for optional cloud sync
 
-## Локальный запуск
+## Local development
 
-Нужен Node.js 20.9+ (проверено на Node 24).
+Requires Node.js 20.9+ (tested on Node 24).
 
 ```bash
 npm install
 npm run dev
 ```
 
-Приложение откроется на http://localhost:3000. Без переменных окружения оно
-работает в локальном режиме: данные хранятся в `localStorage` браузера.
+Open http://localhost:3000. With no environment variables the app runs in local mode
+and stores data in the browser's `localStorage`.
 
-Полезные команды:
+Other commands:
 
 ```bash
-npm run typecheck   # проверка типов
-npm test            # юнит-тесты
-npm run build       # production-сборка
-npm start           # запуск production-сборки
+npm run typecheck   # type checking
+npm test            # unit tests
+npm run build       # production build
+npm start           # run the production build
 ```
 
-## Облачная синхронизация (телефон + компьютер)
+## Cloud sync (phone + computer)
 
-По умолчанию данные хранятся только в браузере. Чтобы видеть одну историю на всех
-устройствах, подключите бесплатную облачную базу:
+By default, data lives only in the current browser. To share one history across all
+devices, connect a free cloud database:
 
-1. Разверните проект на Vercel (см. ниже).
-2. В проекте Vercel откройте **Storage → Marketplace → Upstash Redis** и создайте
-   бесплатную базу, подключив её к проекту.
-3. Vercel добавит переменные `KV_REST_API_URL` и `KV_REST_API_TOKEN`
-   (или `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`).
-4. Добавьте переменную `APP_PIN` — код для входа в приложение.
-5. Передеплойте проект. Приложение само перейдёт в облачный режим.
+1. Deploy the project to Vercel (see below).
+2. In the Vercel project, open **Storage → Marketplace → Upstash Redis** and create a
+   free database connected to the project.
+3. Vercel adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or
+   `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`).
+4. Add an `APP_PIN` variable — the code used to sign in.
+5. Redeploy. The app switches to cloud mode automatically.
 
-| Переменная | Обязательна | Назначение |
+| Variable | Required | Purpose |
 | --- | --- | --- |
-| `KV_REST_API_URL` | для облака | REST-адрес базы Upstash |
-| `KV_REST_API_TOKEN` | для облака | Токен доступа к базе |
-| `APP_PIN` | для облака | PIN-код входа (например, 4–8 цифр) |
+| `KV_REST_API_URL` | for cloud mode | Upstash REST endpoint |
+| `KV_REST_API_TOKEN` | for cloud mode | Database access token |
+| `APP_PIN` | for cloud mode | Sign-in PIN (for example, 4–8 digits) |
 
-Поддерживаются и имена `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`.
-Если задана только часть переменных, приложение останется в локальном режиме.
+The alternative names `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` are also
+supported. If only some of the variables are present, the app stays in local mode.
 
-### Как это устроено
+### How it works
 
-- Записи лежат в Upstash: `elec:rec:<id>` и множество идентификаторов `elec:ids`.
-- Вход по PIN проверяется на сервере; в cookie кладётся httpOnly-сессия на 120 дней.
-- PIN сравнивается по SHA-256 за постоянное время; 10 неудачных попыток за 15 минут
-  блокируют вход с этого IP.
-- Оплаченные записи блокируются и на клиенте, и на сервере (HTTP 409), пока не
-  придёт явный запрос `{ "unlock": true }`.
-- Серверные API-роуты без валидной сессии возвращают `401`.
+- Records are stored in Upstash as `elec:rec:<id>` plus an `elec:ids` set.
+- The PIN is verified on the server; an httpOnly session cookie is issued for 120 days.
+- PIN comparison uses SHA-256 with a timing-safe check. Ten failed attempts within
+  15 minutes block sign-in from that IP.
+- Paid records are locked on both the client and the server (HTTP 409) until an
+  explicit `{ "unlock": true }` request arrives.
+- API routes return `401` without a valid session.
 
-> PIN-код — это защита личного кабинета, а не полноценная авторизация пользователей.
-> Не публикуйте ссылку на приложение в открытом доступе без необходимости.
+> The PIN protects a personal dashboard; it is not a full multi-user authentication
+> system. Avoid sharing the app link publicly unless you need to.
 
-## Деплой на GitHub и Vercel
+## Deploying to GitHub and Vercel
 
-Проект уже опубликован. Для повторного деплоя или форка:
+The project is already published. To redeploy or fork it:
 
-Репозиторий инициализирован локально, ветка `main`. Если GitHub CLI установлен и
-выполнен `gh auth login`:
+The local repository is initialized on the `main` branch. If GitHub CLI is installed
+and `gh auth login` has been completed:
 
 ```bash
 gh repo create elektro-raschet --public --source=. --remote=origin --push
 ```
 
-Без GitHub CLI:
+Without GitHub CLI:
 
-1. Создайте пустой репозиторий на GitHub (без README и .gitignore).
-2. Выполните:
+1. Create an empty repository on GitHub (no README or .gitignore).
+2. Run:
 
 ```bash
-git remote add origin https://github.com/<ваш-логин>/elektro-raschet.git
+git remote add origin https://github.com/<your-login>/elektro-raschet.git
 git branch -M main
 git push -u origin main
 ```
 
-Деплой на Vercel:
+Deploying to Vercel:
 
-- **Через сайт:** [vercel.com/new](https://vercel.com/new) → Import Git Repository →
-  выберите репозиторий → Framework Preset: **Next.js** → Deploy.
-- **Через CLI:**
+- **Dashboard:** [vercel.com/new](https://vercel.com/new) → Import Git Repository →
+  select the repository → Framework Preset: **Next.js** → Deploy.
+- **CLI:**
 
 ```bash
 npm i -g vercel
@@ -147,47 +150,47 @@ vercel
 vercel --prod
 ```
 
-После первого деплоя добавьте облачные переменные (см. выше) в
-**Settings → Environment Variables** и выполните Redeploy.
+After the first deployment, add the cloud environment variables (see above) in
+**Settings → Environment Variables** and redeploy.
 
-## Резервные копии и перенос данных
+## Backups and data migration
 
-В настройках приложения:
+In the app's Settings:
 
-- **Скачать JSON** — полная копия расчётов и тарифов.
-- **Скачать CSV** — таблица для Excel (разделитель `;`, десятичная запятая, BOM).
-- **Импорт JSON** — добавляет новые месяцы и обновляет совпадающие; записи, которых
-  нет в файле, остаются на месте. Дубли месяцев и некорректные строки пропускаются.
-- **Перенести N с этого устройства** — в облачном режиме отправляет локальные записи
-  в облако (например, если вы начали пользоваться приложением до подключения базы).
+- **Download JSON** — a full copy of records and tariffs.
+- **Download CSV** — an Excel-friendly table (`;` separator, decimal comma, BOM).
+- **Import JSON** — adds new months and updates matching ones; records missing from
+  the file are left untouched. Duplicate months and invalid rows are skipped.
+- **Move N records from this device** — in cloud mode, uploads local records to the
+  cloud (useful if you started using the app before connecting a database).
 
-## Структура проекта
+## Project structure
 
 ```
 app/
-  api/auth/            вход и выход по PIN
-  api/records/         CRUD расчётов и массовый импорт
-  api/status/          режим хранения и состояние сессии
-  layout.tsx           метаданные, PWA, service worker
-  page.tsx             главная страница
-  globals.css          дизайн-система, адаптив, тёмная тема
-components/            форма, история, карточки, настройки, модальные окна
+  api/auth/            PIN sign-in and sign-out
+  api/records/         Record CRUD and bulk import
+  api/status/          Storage mode and session state
+  layout.tsx           Metadata, PWA, service worker
+  page.tsx             Main page
+  globals.css          Design system, responsive layout, dark theme
+components/            Form, history, record cards, settings, modals
 lib/
-  calc.ts              расчёты, парсинг чисел, валидация
-  format.ts            форматирование денег, дат, месяцев
-  client/              localStorage, API-клиент, хуки, экспорт/импорт
-  server/              Upstash REST, сессии, PIN, санитизация записей
-tests/                 юнит-тесты расчётов и резервных копий
+  calc.ts              Calculations, number parsing, validation
+  format.ts            Money, date, and month formatting
+  client/              localStorage, API client, hooks, export/import
+  server/              Upstash REST client, sessions, PIN, record sanitization
+tests/                 Unit tests for calculations and backups
 ```
 
-## Ограничения
+## Limitations
 
-- Приложение — личный учёт, а не интеграция с энергопоставщиком: показания никуда
-  не отправляются.
-- В локальном режиме данные не синхронизируются между устройствами и могут быть
-  потеряны при очистке данных браузера — скачивайте JSON-копию.
-- Для облачного режима нужна настроенная база Upstash и переменная `APP_PIN`.
+- This is a personal ledger, not an integration with an electricity supplier;
+  readings are never sent anywhere.
+- In local mode, data is not synced between devices and can be lost if browser data
+  is cleared — download a JSON backup regularly.
+- Cloud mode requires a configured Upstash database and the `APP_PIN` variable.
 
-## Лицензия
+## License
 
-MIT. Используйте и адаптируйте под свои тарифы.
+MIT. Use and adapt it to your own tariffs.
