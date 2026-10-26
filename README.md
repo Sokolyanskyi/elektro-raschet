@@ -4,6 +4,9 @@
 Вносите показания счётчика за прошлый и текущий месяц, приложение считает расход
 в кВт·ч и сумму к оплате, а история расчётов и оплат хранится годами.
 
+**Приложение:** https://elektro-raschet.vercel.app (вход по PIN владельца)  
+**Репозиторий:** https://github.com/Sokolyanskyi/elektro-raschet
+
 ![Расчёт и история оплат](docs/screenshot-desktop.png)
 
 ## Возможности
@@ -112,8 +115,10 @@ npm start           # запуск production-сборки
 
 ## Деплой на GitHub и Vercel
 
-Репозиторий уже инициализирован локально. Если GitHub CLI установлен и выполнен
-`gh auth login`:
+Проект уже опубликован. Для повторного деплоя или форка:
+
+Репозиторий инициализирован локально, ветка `main`. Если GitHub CLI установлен и
+выполнен `gh auth login`:
 
 ```bash
 gh repo create elektro-raschet --public --source=. --remote=origin --push
