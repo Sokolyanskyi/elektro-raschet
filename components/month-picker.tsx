@@ -22,20 +22,21 @@ export function MonthPicker({ value, onChange, id }: MonthPickerProps) {
   const [rawYear, rawMonth] = value.split("-");
   const year = Number(rawYear);
   const month = Number(rawMonth);
-  const now = new Date();
-  const currentYear = now.getFullYear();
+  const currentYear = new Date().getFullYear();
+  const safeYear = Number.isFinite(year) ? year : currentYear;
+  const safeMonth = Number.isFinite(month) && month >= 1 && month <= 12 ? month : 1;
 
-  const firstYear = Math.min(currentYear - 5, Number.isFinite(year) ? year : currentYear);
-  const lastYear = Math.max(currentYear + 2, Number.isFinite(year) ? year : currentYear);
+  // Billing months start in 2021, with 30 years ahead. A year that is already
+  // selected (for example from an imported backup) is always kept in the list.
+  const firstYear = Math.min(2021, safeYear);
+  const lastYear = Math.max(currentYear + 30, safeYear);
   const years: number[] = [];
   for (let option = lastYear; option >= firstYear; option -= 1) {
     years.push(option);
   }
 
   const update = (nextYear: number, nextMonth: number) => {
-    onChange(
-      `${nextYear}-${String(nextMonth).padStart(2, "0")}`,
-    );
+    onChange(`${nextYear}-${String(nextMonth).padStart(2, "0")}`);
   };
 
   return (
@@ -44,8 +45,8 @@ export function MonthPicker({ value, onChange, id }: MonthPickerProps) {
         id={id}
         className="input"
         aria-label={t("form.monthAria")}
-        value={Number.isFinite(month) && month >= 1 && month <= 12 ? month : ""}
-        onChange={(event) => update(year, Number(event.target.value))}
+        value={safeMonth}
+        onChange={(event) => update(safeYear, Number(event.target.value))}
       >
         {MONTHS.map((option) => (
           <option key={option} value={option}>
@@ -56,8 +57,8 @@ export function MonthPicker({ value, onChange, id }: MonthPickerProps) {
       <select
         className="input"
         aria-label={t("form.yearAria")}
-        value={Number.isFinite(year) ? year : currentYear}
-        onChange={(event) => update(Number(event.target.value), month)}
+        value={safeYear}
+        onChange={(event) => update(Number(event.target.value), safeMonth)}
       >
         {years.map((option) => (
           <option key={option} value={option}>
