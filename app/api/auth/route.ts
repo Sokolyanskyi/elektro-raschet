@@ -2,7 +2,6 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import {
   SESSION_COOKIE,
-  SESSION_MAX_AGE,
   checkPin,
   createSession,
   destroySession,
@@ -10,6 +9,7 @@ import {
   isRateLimited,
   registerFailedAttempt,
   resetFailedAttempts,
+  sessionCookieOptions,
 } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
@@ -56,13 +56,7 @@ export async function POST(request: Request) {
     const token = await createSession(env);
 
     const response = NextResponse.json({ ok: true });
-    response.cookies.set(SESSION_COOKIE, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: SESSION_MAX_AGE,
-    });
+    response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
     return response;
   } catch {
     return NextResponse.json(
@@ -84,12 +78,6 @@ export async function DELETE() {
   }
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(SESSION_COOKIE, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
+  response.cookies.set(SESSION_COOKIE, "", { ...sessionCookieOptions(), maxAge: 0 });
   return response;
 }

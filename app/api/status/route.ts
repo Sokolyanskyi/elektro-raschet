@@ -1,5 +1,11 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { getCloudEnv, isAuthenticated } from "@/lib/server/auth";
+import {
+  SESSION_COOKIE,
+  getCloudEnv,
+  refreshSession,
+  sessionCookieOptions,
+} from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,12 +22,20 @@ export async function GET() {
   }
 
   try {
-    const authenticated = await isAuthenticated(env);
-    return NextResponse.json({
+    const store = await cookies();
+    const token = store.get(SESSION_COOKIE)?.value;
+    const authenticated = await refreshSession(env, token);
+    const response = NextResponse.json({
       cloud: true,
       pinRequired: !authenticated,
       authenticated,
     });
+
+    // Скользящая сессия: каждый запуск приложения продлевает cookie на 400 дней.
+    if (authenticated && token) {
+      response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
+    }
+    return response;
   } catch {
     return NextResponse.json({
       cloud: true,

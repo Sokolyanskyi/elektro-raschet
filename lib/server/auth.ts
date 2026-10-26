@@ -8,7 +8,21 @@ export interface CloudEnv {
 }
 
 export const SESSION_COOKIE = "elec_session";
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 120; // 120 дней
+// Браузеры ограничивают срок жизни cookie примерно 400 днями.
+// Поэтому сессия «скользящая»: каждое обращение продлевает и cookie, и ключ в Redis.
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 400; // 400 дней
+
+export const SESSION_MAX_AGE = SESSION_TTL_SECONDS;
+
+export function sessionCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: SESSION_MAX_AGE,
+  };
+}
 
 /**
  * Облако включается только если настроены все три переменные:
@@ -110,10 +124,23 @@ export async function resetFailedAttempts(env: CloudEnv, ip: string): Promise<vo
   await kvCommand(env, ["DEL", `elec:fail:${ip}`]);
 }
 
-/** Проверяет cookie сессии для API-роутов. */
-export async function isAuthenticated(env: CloudEnv): Promise<boolean> {
-  const store = await cookies();
-  return sessionExists(env, store.get(SESSION_COOKIE)?.value);
+/** Продлевает ключ сессии в Redis. Возвращает false, если сессии уже нет. */
+export async function refreshSession(
+  env: CloudEnv,
+  token: string | undefined,
+): Promise<boolean> {
+  if (!token) return false;
+  // EXPIRE возвращает 1, если ключ существует, и 0, если сессии уже нет.
+  const refreshed = await kvCommand<number>(env, [
+    "EXPIRE",
+    `elec:sess:${token}`,
+    SESSION_TTL_SECONDS,
+  ]);
+  return refreshed === 1;
 }
 
-export const SESSION_MAX_AGE = SESSION_TTL_SECONDS;
+/** Проверяет cookie сессии и продлевает её при каждом обращении. */
+export async function isAuthenticated(env: CloudEnv): Promise<boolean> {
+  const store = await cookies();
+  return refreshSession(env, store.get(SESSION_COOKIE)?.value);
+}

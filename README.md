@@ -159,7 +159,9 @@ supported. If only some of the variables are present, the app stays in local mod
 ### How it works
 
 - Records are stored in Upstash as `elec:rec:<id>` plus an `elec:ids` set.
-- The PIN is verified on the server; an httpOnly session cookie is issued for 120 days.
+- The PIN is verified on the server; an httpOnly session cookie is issued for 400 days.
+  The session is sliding: every authenticated visit renews both the cookie and the
+  Upstash key, so regular use never requires re-entering the PIN.
 - PIN comparison uses SHA-256 with a timing-safe check. Ten failed attempts within
   15 minutes block sign-in from that IP.
 - Paid records are locked on both the client and the server (HTTP 409) until an

@@ -49,7 +49,7 @@ const ru = {
   "lock.checking": "Проверяем…",
   "lock.submit": "Войти",
   "lock.hintBefore": "PIN-код задаётся владельцем приложения в переменной ",
-  "lock.hintAfter": " на Vercel. Сессия сохраняется на 120 дней.",
+  "lock.hintAfter": " на Vercel. Сессия продлевается при каждом входе — повторно вводить PIN не нужно.",
   "lock.fallback": "Не удалось войти",
 
   "header.cloud": "Облако",
@@ -400,7 +400,7 @@ const uk: Record<MessageKey, string> = {
   "lock.checking": "Перевіряємо…",
   "lock.submit": "Увійти",
   "lock.hintBefore": "PIN-код задає власник застосунку у змінній ",
-  "lock.hintAfter": " на Vercel. Сесія зберігається 120 днів.",
+  "lock.hintAfter": " на Vercel. Сесія подовжується під час кожного входу — повторно вводити PIN не потрібно.",
   "lock.fallback": "Не вдалося увійти",
 
   "header.cloud": "Хмара",
@@ -749,7 +749,7 @@ const en: Record<MessageKey, string> = {
   "lock.checking": "Checking…",
   "lock.submit": "Sign in",
   "lock.hintBefore": "The PIN is set by the app owner in the ",
-  "lock.hintAfter": " variable on Vercel. The session lasts 120 days.",
+  "lock.hintAfter": " variable on Vercel. The session renews on every visit, so you do not need to re-enter the PIN.",
   "lock.fallback": "Could not sign in",
 
   "header.cloud": "Cloud",
@@ -1097,7 +1097,7 @@ const pl: Record<MessageKey, string> = {
   "lock.checking": "Sprawdzanie…",
   "lock.submit": "Zaloguj się",
   "lock.hintBefore": "Kod PIN ustawia właściciel aplikacji w zmiennej ",
-  "lock.hintAfter": " na Vercel. Sesja trwa 120 dni.",
+  "lock.hintAfter": " na Vercel. Sesja jest przedłużana przy każdym wejściu — nie trzeba ponownie wpisywać PIN-u.",
   "lock.fallback": "Nie udało się zalogować",
 
   "header.cloud": "Chmura",
@@ -1444,7 +1444,7 @@ const zh: Record<MessageKey, string> = {
   "lock.checking": "正在验证…",
   "lock.submit": "登录",
   "lock.hintBefore": "PIN 码由应用所有者在 Vercel 的 ",
-  "lock.hintAfter": " 变量中设置。登录状态保留 120 天。",
+  "lock.hintAfter": " 变量中设置。每次访问都会自动续期，无需重复输入 PIN。",
   "lock.fallback": "登录失败",
 
   "header.cloud": "云端",
