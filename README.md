@@ -24,8 +24,9 @@ and the amount due. The history of calculations and payments is kept for years.
 - **Payment date and receipt.** Pick the actual payment date, confirm the payment, and
   the app saves the bill and generates an electronic receipt. The receipt is downloaded
   automatically and can be reopened from the month details or the record card, then
-  downloaded again or printed to PDF. A paid record cannot be edited or deleted until
-  you explicitly choose “Cancel payment”.
+  downloaded again or printed to PDF. A paid record stays paid: you can correct its
+  payment date and day/night readings at any time, but deleting it requires
+  “Cancel payment” first.
 - **Multi-year history.** Filter by year and see yearly totals (usage, charged, paid,
   debt). The monthly charges chart is interactive: tap a bar to inspect that month’s
   usage, amount, payment status, day/night split, and receipt. Records are never removed
@@ -164,8 +165,8 @@ supported. If only some of the variables are present, the app stays in local mod
   Upstash key, so regular use never requires re-entering the PIN.
 - PIN comparison uses SHA-256 with a timing-safe check. Ten failed attempts within
   15 minutes block sign-in from that IP.
-- Paid records are locked on both the client and the server (HTTP 409) until an
-  explicit `{ "unlock": true }` request arrives.
+- Paid records cannot be deleted until an explicit `{ "unlock": true }` request arrives.
+  Their payment date and readings can be corrected without unlocking (`keepPaid`).
 - API routes return `401` without a valid session.
 
 > The PIN protects a personal dashboard; it is not a full multi-user authentication
