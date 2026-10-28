@@ -591,10 +591,33 @@ a {
 
 .rate-chip-day svg {
   color: var(--day);
+  transform-origin: 50% 50%;
+  animation: rate-sun-turn 22s linear infinite;
 }
 
 .rate-chip-night svg {
   color: var(--night);
+  transform-origin: 50% 50%;
+  animation: rate-moon-sway 5.5s ease-in-out infinite;
+}
+
+@keyframes rate-sun-turn {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rate-moon-sway {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-7deg);
+  }
+  50% {
+    transform: translateY(-1.5px) rotate(7deg);
+  }
 }
 
 .stats {
