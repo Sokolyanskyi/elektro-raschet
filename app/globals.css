@@ -591,14 +591,18 @@ a {
 
 .rate-chip-day svg {
   color: var(--day);
+  width: 32px;
+  height: 32px;
   transform-origin: 50% 50%;
   animation: rate-sun-turn 22s linear infinite;
 }
 
 .rate-chip-night svg {
   color: var(--night);
+  width: 32px;
+  height: 32px;
   transform-origin: 50% 50%;
-  animation: rate-moon-sway 5.5s ease-in-out infinite;
+  animation: rate-moon-sway 4s ease-in-out infinite;
 }
 
 @keyframes rate-sun-turn {
@@ -613,10 +617,10 @@ a {
 @keyframes rate-moon-sway {
   0%,
   100% {
-    transform: translateY(0) rotate(-7deg);
+    transform: translateY(0) rotate(-14deg) scale(1);
   }
   50% {
-    transform: translateY(-1.5px) rotate(7deg);
+    transform: translateY(-2.5px) rotate(14deg) scale(1.08);
   }
 }
 
