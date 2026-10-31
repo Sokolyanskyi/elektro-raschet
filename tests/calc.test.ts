@@ -62,6 +62,33 @@ describe("calculateUsage", () => {
   it("не даёт отрицательный ноль", () => {
     expect(round2(-0.0001)).toBe(0);
   });
+
+  it("считает расход и стоимость газа с доставкой", () => {
+    const usage = calculateUsage({
+      ...base,
+      gasPrev: 100,
+      gasCurr: 118,
+      gasRate: 7.96,
+      gasDeliveryFee: 30,
+    });
+    expect(usage.gasUsage).toBe(18);
+    expect(usage.gasCost).toBeCloseTo(18 * 7.96 + 30, 2);
+    expect(usage.gasTotal).toBeCloseTo(18 * 7.96 + 30, 2);
+    expect(usage.total).toBeCloseTo(usage.dayCost + usage.nightCost + usage.gasCost, 2);
+  });
+
+  it("газ без расхода не даёт стоимости", () => {
+    const usage = calculateUsage({
+      ...base,
+      gasPrev: 50,
+      gasCurr: 50,
+      gasRate: 7.96,
+      gasDeliveryFee: 30,
+    });
+    expect(usage.gasUsage).toBe(0);
+    expect(usage.gasCost).toBe(30);
+    expect(usage.total).toBeCloseTo(usage.dayCost + usage.nightCost + usage.gasCost, 2);
+  });
 });
 
 describe("parseNumber", () => {

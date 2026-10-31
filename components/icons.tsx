@@ -212,3 +212,12 @@ export function ReceiptIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function FuelIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M13.5 3.5 7 12.5l2.6 4.6a2 2 0 0 0 1.9 1h9.2a2 2 0 0 0 1.9-1.1l2.5-6.4a2 2 0 0 0-2-3.2z" />
+      <path d="M11 12h5M11 15h5" />
+    </svg>
+  );
+}

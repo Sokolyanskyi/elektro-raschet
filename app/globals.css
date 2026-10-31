@@ -1328,6 +1328,40 @@ a {
   }
 }
 
+/* ------------------------------ meter tabs ------------------------------ */
+
+.meter-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.meter-tab {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted-2);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.meter-tab.is-active {
+  border-color: var(--day);
+  background: var(--day-soft);
+  color: var(--day-text);
+}
+
+.meter-gas {
+  border-left-color: var(--brand);
+}
+
+.gas-delivery {
+  margin-top: 10px;
+}
+
 /* ------------------------------- rates ----------------------------------- */
 
 .rates-panel {

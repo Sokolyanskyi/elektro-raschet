@@ -18,6 +18,10 @@ function record(overrides: Partial<MeterRecord> = {}): MeterRecord {
     paidAt: null,
     createdAt: "2026-10-26T10:00:00.000Z",
     updatedAt: "2026-10-26T10:00:00.000Z",
+    gasPrev: 0,
+    gasCurr: 0,
+    gasRate: 7.96,
+    gasDeliveryFee: 0,
     ...overrides,
   };
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { calculateUsage, parseNumber, validateDraft } from "@/lib/calc";
+import { calculateUsage, DEFAULT_DAY_RATE, DEFAULT_GAS_RATE, DEFAULT_NIGHT_RATE, parseNumber, validateDraft } from "@/lib/calc";
 import {
   currentPeriod,
+  formatKwh,
   formatMoney,
   formatNumber,
   monthLabel,
@@ -19,6 +20,7 @@ import {
   CalendarIcon,
   CheckIcon,
   ChevronDownIcon,
+  FuelIcon,
   MoonIcon,
   SunIcon,
   WalletIcon,
@@ -117,6 +119,11 @@ export function RecordForm({
   const [showErrors, setShowErrors] = useState(false);
   const [saving, setSaving] = useState(false);
   const [ratesOpen, setRatesOpen] = useState(false);
+  const [meter, setMeter] = useState<"electricity" | "gas">("electricity");
+  const [gasPrev, setGasPrev] = useState(toInputValue(editing ? editing.gasPrev : 0, locale));
+  const [gasCurr, setGasCurr] = useState(toInputValue(editing ? editing.gasCurr : 0, locale));
+  const [gasRate, setGasRate] = useState(toInputValue(editing ? editing.gasRate : DEFAULT_GAS_RATE, locale));
+  const [gasDeliveryFee, setGasDeliveryFee] = useState(toInputValue(editing ? editing.gasDeliveryFee : 0, locale));
 
   const numbers = useMemo(
     () => ({
@@ -126,8 +133,12 @@ export function RecordForm({
       nightCurr: parseNumber(nightCurr),
       dayRate: parseNumber(dayRate),
       nightRate: parseNumber(nightRate),
+      gasPrev: parseNumber(gasPrev),
+      gasCurr: parseNumber(gasCurr),
+      gasRate: parseNumber(gasRate),
+      gasDeliveryFee: parseNumber(gasDeliveryFee),
     }),
-    [dayPrev, dayCurr, nightPrev, nightCurr, dayRate, nightRate],
+    [dayPrev, dayCurr, nightPrev, nightCurr, dayRate, nightRate, gasPrev, gasCurr, gasRate, gasDeliveryFee],
   );
 
   const duplicate = useMemo(
@@ -150,6 +161,10 @@ export function RecordForm({
           nightCurr: numbers.nightCurr,
           dayRate: numbers.dayRate,
           nightRate: numbers.nightRate,
+          gasPrev: numbers.gasPrev,
+          gasCurr: numbers.gasCurr,
+          gasRate: numbers.gasRate,
+          gasDeliveryFee: numbers.gasDeliveryFee,
         },
         { existing: records, currentId: editing?.id },
       ),
@@ -165,18 +180,46 @@ export function RecordForm({
   const ratesReady = numbers.dayRate !== null && numbers.nightRate !== null;
 
   const usage = useMemo(() => {
-    if (!readingsReady || !ratesReady) return null;
-    return calculateUsage({
+    const usable =
+      meter === "gas"
+        ? numbers.gasPrev !== null &&
+          numbers.gasCurr !== null &&
+          numbers.gasRate !== null &&
+          numbers.gasDeliveryFee !== null
+        : readingsReady && ratesReady;
+    if (!usable || !numbers) return null;
+    const base = {
+      dayPrev: numbers.dayPrev ?? 0,
+      dayCurr: numbers.dayCurr ?? 0,
+      nightPrev: numbers.nightPrev ?? 0,
+      nightCurr: numbers.nightCurr ?? 0,
+      dayRate: numbers.dayRate ?? DEFAULT_DAY_RATE,
+      nightRate: numbers.nightRate ?? DEFAULT_NIGHT_RATE,
+      gasPrev: numbers.gasPrev ?? 0,
+      gasCurr: numbers.gasCurr ?? 0,
+      gasRate: numbers.gasRate ?? DEFAULT_GAS_RATE,
+      gasDeliveryFee: numbers.gasDeliveryFee ?? 0,
+    };
+    if (meter === "gas") {
+      // В режиме газа считаем только газ: электрическая часть берётся из копии данных.
+      const safe = { ...base, dayPrev: 0, dayCurr: 0, nightPrev: 0, nightCurr: 0, dayRate: DEFAULT_DAY_RATE, nightRate: DEFAULT_NIGHT_RATE };
+      return calculateUsage(safe);
+    }
+    const electricity = {
       dayPrev: numbers.dayPrev!,
       dayCurr: numbers.dayCurr!,
       nightPrev: numbers.nightPrev!,
       nightCurr: numbers.nightCurr!,
       dayRate: numbers.dayRate!,
       nightRate: numbers.nightRate!,
-    });
-  }, [readingsReady, ratesReady, numbers]);
+    };
+    const combined = { ...electricity, ...base };
+    return calculateUsage(combined);
+  }, [meter, readingsReady, ratesReady, numbers]);
 
-  const negativeUsage = usage !== null && (usage.dayUsage < 0 || usage.nightUsage < 0);
+  const negativeUsage = usage !== null && (
+    meter === "gas" ? usage.gasUsage < 0 : usage.dayUsage < 0 || usage.nightUsage < 0
+  );
   const resultReady = usage !== null && !negativeUsage;
 
   const visibleError = (key: string): string | undefined => {
@@ -224,6 +267,10 @@ export function RecordForm({
       nightCurr: numbers.nightCurr!,
       dayRate: numbers.dayRate!,
       nightRate: numbers.nightRate!,
+      gasPrev: numbers.gasPrev ?? 0,
+      gasCurr: numbers.gasCurr ?? 0,
+      gasRate: numbers.gasRate ?? DEFAULT_GAS_RATE,
+      gasDeliveryFee: numbers.gasDeliveryFee ?? 0,
       enteredAt,
     };
 
@@ -315,6 +362,27 @@ export function RecordForm({
           </Field>
         </div>
 
+        <div className="meter-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={meter === "electricity"}
+            className={`meter-tab ${meter === "electricity" ? "is-active" : ""}`}
+            onClick={() => setMeter("electricity")}
+          >
+            {t("form.tabElectricity")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={meter === "gas"}
+            className={`meter-tab ${meter === "gas" ? "is-active" : ""}`}
+            onClick={() => setMeter("gas")}
+          >
+            {t("form.tabGas")}
+          </button>
+        </div>
+
         <div className="section-label">
           <span>{t("form.readingsSection")}</span>
           <span>{t("common.kwh")}</span>
@@ -328,6 +396,7 @@ export function RecordForm({
         ) : null}
 
         <div className="meter-list">
+          {meter === "electricity" ? (
           <div className="meter-card meter-day">
             <div className="meter-top">
               <div className="meter-title">
@@ -384,7 +453,9 @@ export function RecordForm({
               </Field>
             </div>
           </div>
+          ) : null}
 
+          {meter === "electricity" ? (
           <div className="meter-card meter-night">
             <div className="meter-top">
               <div className="meter-title">
@@ -441,7 +512,80 @@ export function RecordForm({
               </Field>
             </div>
           </div>
+          ) : null}
         </div>
+
+        {meter === "gas" ? (
+          <div className="meter-card meter-gas">
+            <div className="meter-top">
+              <div className="meter-title">
+                <span className="tariff-icon tariff-gas">
+                  <FuelIcon width={18} height={18} />
+                </span>
+                <div>
+                  <b>{t("form.tabGas")}</b>
+                  <small>
+                    {formatNumber(numbers.gasRate ?? DEFAULT_GAS_RATE, locale)} {t("form.rateUnit")}
+                  </small>
+                </div>
+              </div>
+              <div className="used-pill">
+                <span>{t("form.used")}</span>
+                <b>{formatNumber(usage?.gasUsage ?? 0, locale)}</b>
+              </div>
+            </div>
+            <div className="meter-fields">
+              <Field label={t("form.prevMonth")} htmlFor="gasPrev" error={visibleError("gasPrev")}>
+                <div className="input-with-unit">
+                  <input
+                    id="gasPrev"
+                    className="input"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder={placeholder}
+                    value={gasPrev}
+                    onChange={(event) => setGasPrev(event.target.value)}
+                  />
+                  <span className="unit">{t("common.kwh")}</span>
+                </div>
+              </Field>
+              <div className="meter-arrow">→</div>
+              <Field label={t("form.thisMonth")} htmlFor="gasCurr" error={visibleError("gasCurr")}>
+                <div className="input-with-unit">
+                  <input
+                    id="gasCurr"
+                    className="input"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder={placeholder}
+                    value={gasCurr}
+                    onChange={(event) => setGasCurr(event.target.value)}
+                  />
+                  <span className="unit">{t("common.kwh")}</span>
+                </div>
+              </Field>
+            </div>
+            <div className="gas-delivery">
+              <Field label={t("form.gasDeliveryLabel")} htmlFor="gasDeliveryFee" error={visibleError("gasDeliveryFee")}>
+                <div className="input-with-unit">
+                  <input
+                    id="gasDeliveryFee"
+                    className="input"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder={placeholder}
+                    value={gasDeliveryFee}
+                    onChange={(event) => setGasDeliveryFee(event.target.value)}
+                  />
+                  <span className="unit">₴</span>
+                </div>
+              </Field>
+            </div>
+          </div>
+        ) : null}
 
         <div className={`rates-panel ${ratesOpen ? "is-open" : ""}`}>
           <button
@@ -535,26 +679,39 @@ export function RecordForm({
 
           {resultReady ? (
             <div className="result-breakdown">
-              <div className="result-row">
-                <span className="result-row-label">
-                  <i className="dot dot-day" />
-                  {t("form.breakdownDay", {
-                    kwh: formatNumber(usage.dayUsage, locale),
-                    rate: formatNumber(numbers.dayRate!, locale),
-                  })}
-                </span>
-                <b>{formatMoney(usage.dayCost, locale)}</b>
-              </div>
-              <div className="result-row">
-                <span className="result-row-label">
-                  <i className="dot dot-night" />
-                  {t("form.breakdownNight", {
-                    kwh: formatNumber(usage.nightUsage, locale),
-                    rate: formatNumber(numbers.nightRate!, locale),
-                  })}
-                </span>
-                <b>{formatMoney(usage.nightCost, locale)}</b>
-              </div>
+              {meter === "gas" ? (
+                <div className="result-row">
+                  <span className="result-row-label">
+                    <i className="dot dot-day" />
+                    {t("common.gas")} · {formatKwh(usage.gasUsage, locale)} ·{" "}
+                    {formatMoney(usage.gasCost, locale)}
+                  </span>
+                  <b>{formatMoney(usage.gasCost, locale)}</b>
+                </div>
+              ) : (
+                <>
+                  <div className="result-row">
+                    <span className="result-row-label">
+                      <i className="dot dot-day" />
+                      {t("form.breakdownDay", {
+                        kwh: formatNumber(usage.dayUsage, locale),
+                        rate: formatNumber(numbers.dayRate!, locale),
+                      })}
+                    </span>
+                    <b>{formatMoney(usage.dayCost, locale)}</b>
+                  </div>
+                  <div className="result-row">
+                    <span className="result-row-label">
+                      <i className="dot dot-night" />
+                      {t("form.breakdownNight", {
+                        kwh: formatNumber(usage.nightUsage, locale),
+                        rate: formatNumber(numbers.nightRate!, locale),
+                      })}
+                    </span>
+                    <b>{formatMoney(usage.nightCost, locale)}</b>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <p className="result-placeholder">

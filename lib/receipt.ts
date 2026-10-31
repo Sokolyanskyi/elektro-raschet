@@ -24,6 +24,7 @@ export interface ReceiptLabels {
   readings: string;
   day: string;
   night: string;
+  gas: string;
   prev: string;
   curr: string;
   used: string;
@@ -70,6 +71,7 @@ export function receiptLabels(translate: Translate, record: MeterRecord): Receip
     readings: translate("receipt.readings"),
     day: translate("common.day"),
     night: translate("common.night"),
+    gas: translate("common.gas"),
     prev: translate("receipt.prev"),
     curr: translate("receipt.curr"),
     used: translate("receipt.used"),
@@ -245,6 +247,9 @@ export function buildReceiptHtml(
       <tbody>
         ${row(labels.day, record.dayPrev, record.dayCurr, usage.dayUsage, record.dayRate, usage.dayCost)}
         ${row(labels.night, record.nightPrev, record.nightCurr, usage.nightUsage, record.nightRate, usage.nightCost)}
+        ${usage.gasUsage > 0 || record.gasDeliveryFee > 0
+          ? row(labels.gas, record.gasPrev, record.gasCurr, usage.gasUsage, record.gasRate, usage.gasCost)
+          : ""}
         <tr class="total">
           <th scope="row" colspan="4">${escapeHtml(labels.total)}</th>
           <td colspan="2" class="num">${escapeHtml(formatMoney(usage.total, locale))}</td>

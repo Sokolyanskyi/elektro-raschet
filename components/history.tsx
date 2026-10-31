@@ -12,7 +12,7 @@ import {
 } from "@/lib/format";
 import type { MeterRecord } from "@/lib/types";
 import { useI18n } from "./i18n-provider";
-import { ChartIcon, MoonIcon, PlusIcon, ReceiptIcon, SunIcon } from "./icons";
+import { ChartIcon, FuelIcon, MoonIcon, PlusIcon, ReceiptIcon, SunIcon } from "./icons";
 import { RecordCard } from "./record-card";
 
 interface HistoryProps {
@@ -272,6 +272,13 @@ export function History({
                       {t("common.night")} · {formatKwh(selectedUsage.nightUsage, locale)} ·{" "}
                       {formatMoney(selectedUsage.nightCost, locale)}
                     </span>
+                    {selectedUsage.gasUsage > 0 || selectedRecord.gasDeliveryFee > 0 ? (
+                      <span>
+                        <FuelIcon width={13} height={13} />
+                        {t("common.gas")} · {formatKwh(selectedUsage.gasUsage, locale)} ·{" "}
+                        {formatMoney(selectedUsage.gasCost, locale)}
+                      </span>
+                    ) : null}
                   </div>
                   {selectedRecord.paid && selectedRecord.paidAt ? (
                     <p className="chart-detail-note">

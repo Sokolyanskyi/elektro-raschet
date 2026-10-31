@@ -23,8 +23,9 @@ function isRecord(value: unknown): value is MeterRecord {
     isValidPeriod(record.period) &&
     typeof record.enteredAt === "string" &&
     isValidDate(record.enteredAt) &&
-    ["dayPrev", "dayCurr", "nightPrev", "nightCurr", "dayRate", "nightRate"].every(
-      (key) => typeof record[key] === "number" && Number.isFinite(record[key]),
+    ["dayPrev", "dayCurr", "nightPrev", "nightCurr", "dayRate", "nightRate", "gasPrev", "gasCurr", "gasRate", "gasDeliveryFee"].every(
+      (key) =>
+        typeof record[key] === "number" && Number.isFinite(record[key] as number),
     ) &&
     typeof record.paid === "boolean"
   );

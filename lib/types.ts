@@ -26,6 +26,14 @@ export interface MeterRecord {
   paidAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Расход газа на начало периода, м³. */
+  gasPrev: number;
+  /** Расход газа на конец периода, м³. */
+  gasCurr: number;
+  /** Тариф газа, грн/м³. */
+  gasRate: number;
+  /** Фиксированная плата за доставку газа, грн/мес. */
+  gasDeliveryFee: number;
 }
 
 /** Данные, которые вводит пользователь в форме. */
@@ -38,6 +46,10 @@ export type RecordDraft = Pick<
   | "nightCurr"
   | "dayRate"
   | "nightRate"
+  | "gasPrev"
+  | "gasCurr"
+  | "gasRate"
+  | "gasDeliveryFee"
   | "enteredAt"
   | "note"
 >;

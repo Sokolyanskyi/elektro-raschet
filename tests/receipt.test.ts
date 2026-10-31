@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_GAS_RATE } from "../lib/calc";
 import { translate } from "../lib/i18n";
 import {
   buildReceiptHtml,
@@ -23,6 +24,10 @@ const record: MeterRecord = {
   note: "Оплачено картой <b>онлайн</b>",
   createdAt: "2026-10-28T09:00:00.000Z",
   updatedAt: "2026-10-28T09:00:00.000Z",
+  gasPrev: 0,
+  gasCurr: 0,
+  gasRate: DEFAULT_GAS_RATE,
+  gasDeliveryFee: 0,
 };
 
 describe("receipt", () => {

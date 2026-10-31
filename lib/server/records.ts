@@ -1,4 +1,4 @@
-import { isValidDate, isValidPeriod, MAX_RATE, MAX_READING } from "@/lib/calc";
+import { DEFAULT_GAS_RATE, isValidDate, isValidPeriod, MAX_RATE, MAX_READING } from "@/lib/calc";
 import type { MeterRecord } from "@/lib/types";
 import { kvCommand, kvPipeline, type CloudEnv } from "./auth";
 
@@ -58,6 +58,14 @@ export function sanitizeRecord(raw: unknown, fallbackId?: string): MeterRecord |
     return null;
   }
 
+  const gasPrev = typeof value.gasPrev === "number" ? value.gasPrev : 0;
+  const gasCurr = typeof value.gasCurr === "number" ? value.gasCurr : 0;
+  const gasRate = typeof value.gasRate === "number" ? value.gasRate : DEFAULT_GAS_RATE;
+  const gasDeliveryFee = typeof value.gasDeliveryFee === "number" ? value.gasDeliveryFee : 0;
+
+  if (gasCurr < gasPrev || gasDeliveryFee < 0) return null;
+  if (gasRate <= 0 || gasRate > MAX_RATE) return null;
+
   const enteredAt = typeof value.enteredAt === "string" ? value.enteredAt : "";
   if (!isValidDate(enteredAt)) return null;
 
@@ -97,6 +105,10 @@ export function sanitizeRecord(raw: unknown, fallbackId?: string): MeterRecord |
     paidAt: paid ? (paidAt ?? now) : null,
     createdAt,
     updatedAt,
+    gasPrev,
+    gasCurr,
+    gasRate,
+    gasDeliveryFee,
   };
 }
 

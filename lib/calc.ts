@@ -2,6 +2,7 @@ import type { MessageKey } from "./i18n/messages";
 
 export const DEFAULT_DAY_RATE = 4.6;
 export const DEFAULT_NIGHT_RATE = 2.3;
+export const DEFAULT_GAS_RATE = 7.96;
 
 export const MAX_READING = 9_999_999;
 export const MAX_RATE = 1_000;
@@ -13,6 +14,10 @@ export interface UsageInput {
   nightCurr: number;
   dayRate: number;
   nightRate: number;
+  gasPrev?: number;
+  gasCurr?: number;
+  gasRate?: number;
+  gasDeliveryFee?: number;
 }
 
 export interface UsageResult {
@@ -22,6 +27,9 @@ export interface UsageResult {
   dayCost: number;
   nightCost: number;
   total: number;
+  gasUsage: number;
+  gasCost: number;
+  gasTotal: number;
 }
 
 /** Округление до копеек (половина — вверх). */
@@ -37,14 +45,21 @@ export function calculateUsage(input: UsageInput): UsageResult {
   const nightUsage = round2(input.nightCurr - input.nightPrev);
   const dayCost = round2(dayUsage * input.dayRate);
   const nightCost = round2(nightUsage * input.nightRate);
+  const gasUsage = round2((input.gasCurr ?? 0) - (input.gasPrev ?? 0));
+  const gasCost = round2(gasUsage * (input.gasRate ?? 0) + (input.gasDeliveryFee ?? 0));
+
+  const total = round2(dayCost + nightCost + gasCost);
 
   return {
     dayUsage,
     nightUsage,
-    totalUsage: round2(dayUsage + nightUsage),
+    totalUsage: round2(dayUsage + nightUsage + gasUsage),
     dayCost,
     nightCost,
-    total: round2(dayCost + nightCost),
+    total,
+    gasUsage,
+    gasCost,
+    gasTotal: gasCost,
   };
 }
 
@@ -91,6 +106,10 @@ export function validateDraft(
     nightCurr: number | null;
     dayRate: number | null;
     nightRate: number | null;
+    gasPrev?: number | null;
+    gasCurr?: number | null;
+    gasRate?: number | null;
+    gasDeliveryFee?: number | null;
   },
   options?: {
     existing?: { id: string; period: string }[];
@@ -141,6 +160,30 @@ export function validateDraft(
     errors.nightCurr = "validation.currLessPrev";
   }
 
+  const gasReadings: Array<[string, number | null | undefined, MessageKey]> = [
+    ["gasPrev", draft.gasPrev, "validation.prevRequired"],
+    ["gasCurr", draft.gasCurr, "validation.currRequired"],
+  ];
+  for (const [key, value, messageKey] of gasReadings) {
+    if (value === undefined) continue;
+    if (value === null) {
+      errors[key] = messageKey;
+    } else if (value < 0) {
+      errors[key] = "validation.negativeReading";
+    } else if (value > MAX_READING) {
+      errors[key] = "validation.readingTooLarge";
+    }
+  }
+  if (
+    draft.gasCurr !== null &&
+    draft.gasPrev !== null &&
+    draft.gasCurr !== undefined &&
+    draft.gasPrev !== undefined &&
+    draft.gasCurr < draft.gasPrev
+  ) {
+    errors.gasCurr = "validation.currLessPrev";
+  }
+
   const rates: Array<[string, number | null]> = [
     ["dayRate", draft.dayRate],
     ["nightRate", draft.nightRate],
@@ -149,6 +192,21 @@ export function validateDraft(
     if (value === null) {
       errors[key] = "validation.rateRequired";
     } else if (value <= 0) {
+      errors[key] = "validation.ratePositive";
+    } else if (value > MAX_RATE) {
+      errors[key] = "validation.rateTooLarge";
+    }
+  }
+
+  const gasRates: Array<[string, number | null | undefined]> = [
+    ["gasRate", draft.gasRate],
+    ["gasDeliveryFee", draft.gasDeliveryFee],
+  ];
+  for (const [key, value] of gasRates) {
+    if (value === undefined) continue;
+    if (value === null) {
+      errors[key] = "validation.rateRequired";
+    } else if (value < 0) {
       errors[key] = "validation.ratePositive";
     } else if (value > MAX_RATE) {
       errors[key] = "validation.rateTooLarge";

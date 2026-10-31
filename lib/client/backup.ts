@@ -1,5 +1,6 @@
 import {
   DEFAULT_DAY_RATE,
+  DEFAULT_GAS_RATE,
   DEFAULT_NIGHT_RATE,
   MAX_RATE,
   MAX_READING,
@@ -53,6 +54,10 @@ function normalizeRecord(raw: unknown): MeterRecord | null {
     dayRate && dayRate > 0 && dayRate <= MAX_RATE ? dayRate : DEFAULT_DAY_RATE;
   const safeNightRate =
     nightRate && nightRate > 0 && nightRate <= MAX_RATE ? nightRate : DEFAULT_NIGHT_RATE;
+  const gasRate = toNumber(value.gasRate);
+  const safeGasRate =
+    gasRate && gasRate > 0 && gasRate <= MAX_RATE ? gasRate : DEFAULT_GAS_RATE;
+  const gasDeliveryFee = toNumber(value.gasDeliveryFee);
 
   const enteredAt =
     typeof value.enteredAt === "string" && isValidDate(value.enteredAt)
@@ -72,6 +77,9 @@ function normalizeRecord(raw: unknown): MeterRecord | null {
     typeof value.id === "string" && /^[a-zA-Z0-9_-]{1,64}$/.test(value.id)
       ? value.id
       : newId();
+
+  const safeGasPrev = typeof value.gasPrev === "number" ? value.gasPrev : 0;
+  const safeGasCurr = typeof value.gasCurr === "number" ? value.gasCurr : 0;
 
   return {
     id,
@@ -94,6 +102,10 @@ function normalizeRecord(raw: unknown): MeterRecord | null {
       typeof value.updatedAt === "string" && !Number.isNaN(Date.parse(value.updatedAt))
         ? value.updatedAt
         : now,
+    gasPrev: safeGasPrev,
+    gasCurr: safeGasCurr,
+    gasRate: safeGasRate,
+    gasDeliveryFee: gasDeliveryFee ?? 0,
   };
 }
 

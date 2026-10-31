@@ -15,6 +15,7 @@ import type { MeterRecord } from "@/lib/types";
 import { useI18n } from "./i18n-provider";
 import {
   CheckIcon,
+  FuelIcon,
   MoonIcon,
   PencilIcon,
   ReceiptIcon,
@@ -105,6 +106,19 @@ export function RecordCard({
             </span>
             <b>{formatMoney(usage.nightCost, locale)}</b>
           </div>
+          {usage.gasUsage > 0 || record.gasDeliveryFee > 0 ? (
+            <div className="breakdown-chip">
+              <span className="breakdown-name">
+                <FuelIcon width={14} height={14} />
+                {t("common.gas")}
+              </span>
+              <span className="breakdown-calc">
+                {formatNumber(usage.gasUsage, locale)} ×{" "}
+                {formatNumber(record.gasRate, locale)} ₴
+              </span>
+              <b>{formatMoney(usage.gasCost, locale)}</b>
+            </div>
+          ) : null}
         </div>
 
         <div className="record-meta">
