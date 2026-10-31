@@ -20,6 +20,10 @@ and the amount due. The history of calculations and payments is kept for years.
   be changed in Settings or directly in the calculation form.
 - **Instant calculation.** Day usage, night usage, the total amount, and the
   day/night breakdown update as you type.
+- **Gas billing.** The same calculator flow for gas: readings in m³, gas tariff per
+  m³, and a monthly delivery fee. The electricity and gas amounts are combined into
+  one total, the history and receipts include the gas part, and the gas tab shows the
+  gas-only breakdown.
 - **Reading entry date.** Saved together with every calculation.
 - **Payment date and receipt.** Pick the actual payment date, confirm the payment, and
   the app saves the bill and generates an electronic receipt. The receipt is downloaded
