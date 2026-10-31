@@ -113,7 +113,14 @@ export async function PATCH(
       }
 
       const existing = await listRecords(auth.env);
-      if (existing.some((item) => item.period === candidate.period && item.id !== id)) {
+      if (
+        existing.some(
+          (item) =>
+            item.period === candidate.period &&
+            item.type === candidate.type &&
+            item.id !== id,
+        )
+      ) {
         return NextResponse.json(
           { error: "duplicate_period" },
           { status: 409 },
@@ -124,12 +131,17 @@ export async function PATCH(
         next = {
           ...next,
           period: candidate.period,
+          type: candidate.type,
           dayPrev: candidate.dayPrev,
           nightPrev: candidate.nightPrev,
           dayCurr: candidate.dayCurr,
           nightCurr: candidate.nightCurr,
           dayRate: candidate.dayRate,
           nightRate: candidate.nightRate,
+          gasPrev: candidate.gasPrev,
+          gasCurr: candidate.gasCurr,
+          gasRate: candidate.gasRate,
+          gasDeliveryFee: candidate.gasDeliveryFee,
           enteredAt: candidate.enteredAt,
           note: candidate.note,
         };

@@ -1,12 +1,20 @@
+/** Тип счётчика: электроэнергия или газ. */
+export type MeterType = "electricity" | "gas";
+
 /**
- * Одна запись = один расчётный месяц.
+ * Одна запись = один расчётный месяц одного счётчика.
  *
  * Показания хранятся как есть (два числа на каждый тариф: на начало и на конец
  * периода), а тарифы фиксируются в самой записи. Благодаря этому старые расчёты
  * никогда не «пересчитываются» задним числом, даже если тарифы поменяются.
+ *
+ * У электрических записей газовые поля равны нулю, у газовых — нулевые дневные
+ * и ночные показания. Ненужная для типа часть всегда заполнена нулями, поэтому
+ * calculateUsage работает одинаково для обоих типов.
  */
 export interface MeterRecord {
   id: string;
+  type: MeterType;
   /** Расчётный месяц в формате YYYY-MM. */
   period: string;
   /** Показание на начало периода (прошлый месяц). */
@@ -26,9 +34,9 @@ export interface MeterRecord {
   paidAt: string | null;
   createdAt: string;
   updatedAt: string;
-  /** Расход газа на начало периода, м³. */
+  /** Показание газового счётчика на начало периода, м³. */
   gasPrev: number;
-  /** Расход газа на конец периода, м³. */
+  /** Показание газового счётчика на конец периода, м³. */
   gasCurr: number;
   /** Тариф газа, грн/м³. */
   gasRate: number;
@@ -39,6 +47,7 @@ export interface MeterRecord {
 /** Данные, которые вводит пользователь в форме. */
 export type RecordDraft = Pick<
   MeterRecord,
+  | "type"
   | "period"
   | "dayPrev"
   | "nightPrev"
@@ -57,6 +66,8 @@ export type RecordDraft = Pick<
 export interface Settings {
   dayRate: number;
   nightRate: number;
+  gasRate: number;
+  gasDeliveryFee: number;
 }
 
 export type StorageMode = "loading" | "local" | "cloud" | "locked" | "error";

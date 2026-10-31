@@ -1,4 +1,5 @@
 import type { MessageKey } from "./i18n/messages";
+import type { MeterType } from "./types";
 
 export const DEFAULT_DAY_RATE = 4.6;
 export const DEFAULT_NIGHT_RATE = 2.3;
@@ -98,6 +99,7 @@ export type ValidationErrors = Record<string, MessageKey>;
 
 export function validateDraft(
   draft: {
+    type?: MeterType;
     period: string;
     enteredAt: string;
     dayPrev: number | null;
@@ -112,17 +114,21 @@ export function validateDraft(
     gasDeliveryFee?: number | null;
   },
   options?: {
-    existing?: { id: string; period: string }[];
+    existing?: { id: string; period: string; type?: MeterType }[];
     currentId?: string;
   },
 ): ValidationErrors {
+  const isGas = draft.type === "gas";
   const errors: ValidationErrors = {};
 
   if (!isValidPeriod(draft.period)) {
     errors.period = "validation.periodRequired";
   } else if (
     options?.existing?.some(
-      (record) => record.period === draft.period && record.id !== options.currentId,
+      (record) =>
+        record.period === draft.period &&
+        record.id !== options.currentId &&
+        (record.type ?? "electricity") === (isGas ? "gas" : "electricity"),
     )
   ) {
     errors.period = "validation.periodDuplicate";
@@ -130,6 +136,49 @@ export function validateDraft(
 
   if (!isValidDate(draft.enteredAt)) {
     errors.enteredAt = "validation.enteredAtRequired";
+  }
+
+  if (isGas) {
+    // Газовая форма: показания и тариф газа обязательны, электричество не проверяем.
+    const gasReadings: Array<[string, number | null | undefined, MessageKey]> = [
+      ["gasPrev", draft.gasPrev, "validation.prevRequired"],
+      ["gasCurr", draft.gasCurr, "validation.currRequired"],
+    ];
+    for (const [key, value, messageKey] of gasReadings) {
+      if (value === null || value === undefined) {
+        errors[key] = messageKey;
+      } else if (value < 0) {
+        errors[key] = "validation.negativeReading";
+      } else if (value > MAX_READING) {
+        errors[key] = "validation.readingTooLarge";
+      }
+    }
+    if (
+      draft.gasCurr !== null &&
+      draft.gasCurr !== undefined &&
+      draft.gasPrev !== null &&
+      draft.gasPrev !== undefined &&
+      draft.gasCurr < draft.gasPrev
+    ) {
+      errors.gasCurr = "validation.currLessPrev";
+    }
+
+    if (draft.gasRate === null || draft.gasRate === undefined) {
+      errors.gasRate = "validation.rateRequired";
+    } else if (draft.gasRate <= 0) {
+      errors.gasRate = "validation.ratePositive";
+    } else if (draft.gasRate > MAX_RATE) {
+      errors.gasRate = "validation.rateTooLarge";
+    }
+
+    if (draft.gasDeliveryFee !== null && draft.gasDeliveryFee !== undefined) {
+      if (draft.gasDeliveryFee < 0) {
+        errors.gasDeliveryFee = "validation.ratePositive";
+      } else if (draft.gasDeliveryFee > MAX_RATE) {
+        errors.gasDeliveryFee = "validation.rateTooLarge";
+      }
+    }
+    return errors;
   }
 
   const readings: Array<[string, number | null, MessageKey]> = [
@@ -160,30 +209,6 @@ export function validateDraft(
     errors.nightCurr = "validation.currLessPrev";
   }
 
-  const gasReadings: Array<[string, number | null | undefined, MessageKey]> = [
-    ["gasPrev", draft.gasPrev, "validation.prevRequired"],
-    ["gasCurr", draft.gasCurr, "validation.currRequired"],
-  ];
-  for (const [key, value, messageKey] of gasReadings) {
-    if (value === undefined) continue;
-    if (value === null) {
-      errors[key] = messageKey;
-    } else if (value < 0) {
-      errors[key] = "validation.negativeReading";
-    } else if (value > MAX_READING) {
-      errors[key] = "validation.readingTooLarge";
-    }
-  }
-  if (
-    draft.gasCurr !== null &&
-    draft.gasPrev !== null &&
-    draft.gasCurr !== undefined &&
-    draft.gasPrev !== undefined &&
-    draft.gasCurr < draft.gasPrev
-  ) {
-    errors.gasCurr = "validation.currLessPrev";
-  }
-
   const rates: Array<[string, number | null]> = [
     ["dayRate", draft.dayRate],
     ["nightRate", draft.nightRate],
@@ -192,21 +217,6 @@ export function validateDraft(
     if (value === null) {
       errors[key] = "validation.rateRequired";
     } else if (value <= 0) {
-      errors[key] = "validation.ratePositive";
-    } else if (value > MAX_RATE) {
-      errors[key] = "validation.rateTooLarge";
-    }
-  }
-
-  const gasRates: Array<[string, number | null | undefined]> = [
-    ["gasRate", draft.gasRate],
-    ["gasDeliveryFee", draft.gasDeliveryFee],
-  ];
-  for (const [key, value] of gasRates) {
-    if (value === undefined) continue;
-    if (value === null) {
-      errors[key] = "validation.rateRequired";
-    } else if (value < 0) {
       errors[key] = "validation.ratePositive";
     } else if (value > MAX_RATE) {
       errors[key] = "validation.rateTooLarge";

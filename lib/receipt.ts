@@ -34,23 +34,27 @@ export interface ReceiptLabels {
   note: string;
   footer: string;
   kwh: string;
+  m3: string;
+  deliveryFee: string;
 }
 
 type Translate = (key: MessageKey, vars?: MessageVars) => string;
 
 export function receiptNumber(record: MeterRecord): string {
   let hash = 2166136261;
-  const seed = `${record.period}:${record.id}`;
+  const seed = `${record.type}:${record.period}:${record.id}`;
   for (let index = 0; index < seed.length; index += 1) {
     hash ^= seed.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
   }
   const code = (hash >>> 0).toString(36).toUpperCase().padStart(6, "0").slice(-6);
-  return `ER-${record.period.replace("-", "")}-${code}`;
+  const prefix = record.type === "gas" ? "GR" : "ER";
+  return `${prefix}-${record.period.replace("-", "")}-${code}`;
 }
 
 export function receiptFileName(record: MeterRecord): string {
-  return `receipt-${record.period}-${receiptNumber(record).slice(-6).toLowerCase()}.html`;
+  const kind = record.type === "gas" ? "gas" : "receipt";
+  return `${kind}-${record.period}-${receiptNumber(record).slice(-6).toLowerCase()}.html`;
 }
 
 /**
@@ -61,7 +65,10 @@ export function receiptLabels(translate: Translate, record: MeterRecord): Receip
   return {
     appName: translate("app.name"),
     title: translate("receipt.title"),
-    subtitle: translate("receipt.subtitle"),
+    subtitle:
+      record.type === "gas"
+        ? translate("receipt.gasSubtitle")
+        : translate("receipt.subtitle"),
     number: translate("receipt.number", { number: receiptNumber(record) }),
     month: translate("receipt.month"),
     paidOn: translate("receipt.paidOn"),
@@ -81,6 +88,8 @@ export function receiptLabels(translate: Translate, record: MeterRecord): Receip
     note: translate("receipt.note"),
     footer: translate("receipt.footer"),
     kwh: translate("common.kwh"),
+    m3: translate("common.m3"),
+    deliveryFee: translate("receipt.deliveryFee"),
   };
 }
 
@@ -103,6 +112,7 @@ export function buildReceiptHtml(
   labels: ReceiptLabels,
 ): string {
   const usage = calculateUsage(record);
+  const isGas = record.type === "gas";
   const month = escapeHtml(monthLabel(record.period, locale));
   const number = escapeHtml(labels.number);
   const issued = escapeHtml(formatDateTime(new Date().toISOString(), locale));
@@ -110,7 +120,7 @@ export function buildReceiptHtml(
     record.paidAt ? formatDateTime(record.paidAt, locale) : formatDate(record.enteredAt, locale),
   );
   const note = record.note?.trim() ? escapeHtml(record.note.trim()) : "";
-  const kwh = escapeHtml(labels.kwh);
+  const unit = escapeHtml(isGas ? labels.m3 : labels.kwh);
 
   const row = (name: string, prev: number, curr: number, used: number, rate: number, cost: number) => `
     <tr>
@@ -121,6 +131,24 @@ export function buildReceiptHtml(
       <td>${escapeHtml(formatNumber(rate, locale))}</td>
       <td class="num">${escapeHtml(formatMoney(cost, locale))}</td>
     </tr>`;
+
+  const rows = isGas
+    ? `${row(labels.gas, record.gasPrev, record.gasCurr, usage.gasUsage, record.gasRate, usage.gasCost)}
+    ${record.gasDeliveryFee > 0
+      ? `<tr>
+      <th scope="row">${escapeHtml(labels.deliveryFee)}</th>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td class="num">${escapeHtml(formatMoney(record.gasDeliveryFee, locale))}</td>
+    </tr>`
+      : ""}`
+    : `${row(labels.day, record.dayPrev, record.dayCurr, usage.dayUsage, record.dayRate, usage.dayCost)}
+    ${row(labels.night, record.nightPrev, record.nightCurr, usage.nightUsage, record.nightRate, usage.nightCost)}
+    ${usage.gasUsage > 0 || record.gasDeliveryFee > 0
+      ? row(labels.gas, record.gasPrev, record.gasCurr, usage.gasUsage, record.gasRate, usage.gasCost)
+      : ""}`;
 
   return `<!doctype html>
 <html lang="${locale}">
@@ -239,17 +267,13 @@ export function buildReceiptHtml(
           <th scope="col"></th>
           <th scope="col">${escapeHtml(labels.prev)}</th>
           <th scope="col">${escapeHtml(labels.curr)}</th>
-          <th scope="col">${escapeHtml(labels.used)}, ${kwh}</th>
+          <th scope="col">${escapeHtml(labels.used)}, ${unit}</th>
           <th scope="col">${escapeHtml(labels.rate)}, ₴</th>
           <th scope="col" class="num">${escapeHtml(labels.amount)}</th>
         </tr>
       </thead>
       <tbody>
-        ${row(labels.day, record.dayPrev, record.dayCurr, usage.dayUsage, record.dayRate, usage.dayCost)}
-        ${row(labels.night, record.nightPrev, record.nightCurr, usage.nightUsage, record.nightRate, usage.nightCost)}
-        ${usage.gasUsage > 0 || record.gasDeliveryFee > 0
-          ? row(labels.gas, record.gasPrev, record.gasCurr, usage.gasUsage, record.gasRate, usage.gasCost)
-          : ""}
+        ${rows}
         <tr class="total">
           <th scope="row" colspan="4">${escapeHtml(labels.total)}</th>
           <td colspan="2" class="num">${escapeHtml(formatMoney(usage.total, locale))}</td>

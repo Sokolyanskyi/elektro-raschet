@@ -56,6 +56,10 @@ export function SettingsDialog({
   const { theme, setTheme } = useTheme();
   const [dayRate, setDayRate] = useState(toInputValue(settings.dayRate, locale));
   const [nightRate, setNightRate] = useState(toInputValue(settings.nightRate, locale));
+  const [gasRate, setGasRate] = useState(toInputValue(settings.gasRate, locale));
+  const [gasDeliveryFee, setGasDeliveryFee] = useState(
+    toInputValue(settings.gasDeliveryFee, locale),
+  );
   const [rateError, setRateError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -63,17 +67,35 @@ export function SettingsDialog({
     if (!open) return;
     setDayRate(toInputValue(settings.dayRate, locale));
     setNightRate(toInputValue(settings.nightRate, locale));
+    setGasRate(toInputValue(settings.gasRate, locale));
+    setGasDeliveryFee(toInputValue(settings.gasDeliveryFee, locale));
     setRateError(null);
   }, [open, settings, locale]);
 
   const saveRates = () => {
     const day = parseNumber(dayRate);
     const night = parseNumber(nightRate);
-    if (day === null || night === null || day <= 0 || night <= 0) {
+    const gas = parseNumber(gasRate);
+    const delivery = parseNumber(gasDeliveryFee);
+    if (
+      day === null ||
+      night === null ||
+      day <= 0 ||
+      night <= 0 ||
+      gas === null ||
+      gas <= 0 ||
+      delivery === null ||
+      delivery < 0
+    ) {
       setRateError(t("settings.rateError"));
       return;
     }
-    onSaveSettings({ dayRate: day, nightRate: night });
+    onSaveSettings({
+      dayRate: day,
+      nightRate: night,
+      gasRate: gas,
+      gasDeliveryFee: delivery,
+    });
     setRateError(null);
     onClose();
   };
@@ -211,6 +233,34 @@ export function SettingsDialog({
                 inputMode="decimal"
                 value={nightRate}
                 onChange={(event) => setNightRate(event.target.value)}
+              />
+              <span className="unit">₴</span>
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="settingsGasRate">{t("settings.gasRateLabel")}</label>
+            <div className="input-with-unit">
+              <input
+                id="settingsGasRate"
+                className="input"
+                type="text"
+                inputMode="decimal"
+                value={gasRate}
+                onChange={(event) => setGasRate(event.target.value)}
+              />
+              <span className="unit">₴</span>
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="settingsGasDelivery">{t("settings.gasDeliveryLabel")}</label>
+            <div className="input-with-unit">
+              <input
+                id="settingsGasDelivery"
+                className="input"
+                type="text"
+                inputMode="decimal"
+                value={gasDeliveryFee}
+                onChange={(event) => setGasDeliveryFee(event.target.value)}
               />
               <span className="unit">₴</span>
             </div>

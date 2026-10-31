@@ -4,18 +4,20 @@ import { calculateUsage } from "@/lib/calc";
 import {
   formatDate,
   formatKwh,
+  formatM3,
   formatMoney,
   formatNumber,
   monthLabel,
   monthShortLabel,
   yearOf,
 } from "@/lib/format";
-import type { MeterRecord } from "@/lib/types";
+import type { MeterRecord, MeterType } from "@/lib/types";
 import { useI18n } from "./i18n-provider";
 import { ChartIcon, FuelIcon, MoonIcon, PlusIcon, ReceiptIcon, SunIcon } from "./icons";
 import { RecordCard } from "./record-card";
 
 interface HistoryProps {
+  meter: MeterType;
   records: MeterRecord[];
   selectedYear: number | "all";
   selectedMonth: string | null;
@@ -32,6 +34,7 @@ interface HistoryProps {
 }
 
 export function History({
+  meter,
   records,
   selectedYear,
   selectedMonth,
@@ -47,6 +50,7 @@ export function History({
   onUpdatePaidDate,
 }: HistoryProps) {
   const { locale, t } = useI18n();
+  const isGas = meter === "gas";
   const years = Array.from(new Set(records.map((record) => yearOf(record.period))));
   if (!years.includes(currentYear)) years.push(currentYear);
   years.sort((a, b) => b - a);
@@ -176,10 +180,11 @@ export function History({
                   const active = monthRecord !== null && monthRecord.period === selectedMonth;
                   const label = monthShortLabel(index + 1, locale);
                   const detail = monthRecord
-                    ? `${monthLabel(monthRecord.period, locale)}: ${formatKwh(
-                        calculateUsage(monthRecord).totalUsage,
-                        locale,
-                      )}, ${formatMoney(value, locale)}`
+                    ? `${monthLabel(monthRecord.period, locale)}: ${
+                        isGas
+                          ? formatM3(calculateUsage(monthRecord).totalUsage, locale)
+                          : formatKwh(calculateUsage(monthRecord).totalUsage, locale)
+                      }, ${formatMoney(value, locale)}`
                     : label;
                   return (
                     <div className="chart-col" key={index}>
@@ -248,7 +253,11 @@ export function History({
                   <div className="chart-detail-grid">
                     <div>
                       <span>{t("history.usage")}</span>
-                      <b>{formatKwh(selectedUsage.totalUsage, locale)}</b>
+                      <b>
+                        {isGas
+                          ? formatM3(selectedUsage.totalUsage, locale)
+                          : formatKwh(selectedUsage.totalUsage, locale)}
+                      </b>
                     </div>
                     <div>
                       <span>{t("history.charged")}</span>
@@ -262,23 +271,33 @@ export function History({
                     </div>
                   </div>
                   <div className="chart-detail-split">
-                    <span>
-                      <SunIcon width={13} height={13} />
-                      {t("common.day")} · {formatKwh(selectedUsage.dayUsage, locale)} ·{" "}
-                      {formatMoney(selectedUsage.dayCost, locale)}
-                    </span>
-                    <span>
-                      <MoonIcon width={13} height={13} />
-                      {t("common.night")} · {formatKwh(selectedUsage.nightUsage, locale)} ·{" "}
-                      {formatMoney(selectedUsage.nightCost, locale)}
-                    </span>
-                    {selectedUsage.gasUsage > 0 || selectedRecord.gasDeliveryFee > 0 ? (
+                    {isGas ? (
                       <span>
                         <FuelIcon width={13} height={13} />
-                        {t("common.gas")} · {formatKwh(selectedUsage.gasUsage, locale)} ·{" "}
+                        {t("common.gas")} · {formatM3(selectedUsage.gasUsage, locale)} ·{" "}
                         {formatMoney(selectedUsage.gasCost, locale)}
                       </span>
-                    ) : null}
+                    ) : (
+                      <>
+                        <span>
+                          <SunIcon width={13} height={13} />
+                          {t("common.day")} · {formatKwh(selectedUsage.dayUsage, locale)} ·{" "}
+                          {formatMoney(selectedUsage.dayCost, locale)}
+                        </span>
+                        <span>
+                          <MoonIcon width={13} height={13} />
+                          {t("common.night")} · {formatKwh(selectedUsage.nightUsage, locale)} ·{" "}
+                          {formatMoney(selectedUsage.nightCost, locale)}
+                        </span>
+                        {selectedUsage.gasUsage > 0 || selectedRecord.gasDeliveryFee > 0 ? (
+                          <span>
+                            <FuelIcon width={13} height={13} />
+                            {t("common.gas")} · {formatM3(selectedUsage.gasUsage, locale)} ·{" "}
+                            {formatMoney(selectedUsage.gasCost, locale)}
+                          </span>
+                        ) : null}
+                      </>
+                    )}
                   </div>
                   {selectedRecord.paid && selectedRecord.paidAt ? (
                     <p className="chart-detail-note">
@@ -295,7 +314,11 @@ export function History({
           <div className="year-summary">
             <div className="year-summary-item">
               <span>{t("history.usage")}</span>
-              <b>{formatKwh(totals.usage, locale)}</b>
+              <b>
+                {isGas
+                  ? formatM3(totals.usage, locale)
+                  : formatKwh(totals.usage, locale)}
+              </b>
             </div>
             <div className="year-summary-item">
               <span>{t("history.charged")}</span>
@@ -352,7 +375,9 @@ export function History({
           <p className="history-total">
             {t("history.total", {
               count: filtered.length,
-              kwh: `${formatNumber(totals.usage, locale)} ${t("common.kwh")}`,
+              kwh: isGas
+                ? `${formatNumber(totals.usage, locale)} ${t("common.m3")}`
+                : `${formatNumber(totals.usage, locale)} ${t("common.kwh")}`,
               scope,
             })}
           </p>

@@ -1360,6 +1360,90 @@ a {
 
 .gas-delivery {
   margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 560px) {
+  .gas-delivery {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ------------------------- pages: electricity / gas ---------------------- */
+
+.tariff-gas {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.rate-chip-gas svg {
+  color: var(--brand);
+  width: 20px;
+  height: 20px;
+}
+
+.rate-chip-gas {
+  border-color: var(--brand-soft);
+  background: var(--brand-soft);
+}
+
+.meter-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 20px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.meter-nav-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  color: var(--muted-2);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.meter-nav-tab svg {
+  flex: 0 0 auto;
+}
+
+.meter-nav-tab.is-active {
+  background: var(--surface);
+  color: var(--text, inherit);
+  box-shadow: var(--shadow-sm);
+}
+
+.meter-nav-tab:first-child.is-active {
+  color: var(--day-text);
+}
+
+.meter-nav-tab:last-child.is-active {
+  color: var(--brand);
+}
+
+@media (max-width: 460px) {
+  .meter-nav {
+    margin-bottom: 14px;
+  }
+
+  .meter-nav-tab {
+    font-size: 12px;
+    padding: 9px 8px;
+  }
 }
 
 /* ------------------------------- rates ----------------------------------- */

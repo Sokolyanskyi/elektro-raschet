@@ -7,7 +7,7 @@ import {
   isValidDate,
   isValidPeriod,
 } from "@/lib/calc";
-import type { MeterRecord, Settings } from "@/lib/types";
+import type { MeterRecord, MeterType, Settings } from "@/lib/types";
 import { newId, sortRecords } from "./local-store";
 import { todayISO } from "@/lib/format";
 
@@ -31,21 +31,28 @@ function normalizeRecord(raw: unknown): MeterRecord | null {
   const value = raw as Record<string, unknown>;
   if (typeof value.period !== "string" || !isValidPeriod(value.period)) return null;
 
-  const dayPrev = toNumber(value.dayPrev);
-  const dayCurr = toNumber(value.dayCurr);
-  const nightPrev = toNumber(value.nightPrev);
-  const nightCurr = toNumber(value.nightCurr);
-  if (dayPrev === null || dayCurr === null || nightPrev === null || nightCurr === null) {
-    return null;
-  }
-  if (
-    [dayPrev, dayCurr, nightPrev, nightCurr].some(
-      (reading) => reading < 0 || reading > MAX_READING,
-    ) ||
-    dayCurr < dayPrev ||
-    nightCurr < nightPrev
-  ) {
-    return null;
+  const type: MeterType = value.type === "gas" ? "gas" : "electricity";
+
+  const dayPrev = toNumber(value.dayPrev) ?? 0;
+  const dayCurr = toNumber(value.dayCurr) ?? 0;
+  const nightPrev = toNumber(value.nightPrev) ?? 0;
+  const nightCurr = toNumber(value.nightCurr) ?? 0;
+
+  const gasPrev = toNumber(value.gasPrev) ?? 0;
+  const gasCurr = toNumber(value.gasCurr) ?? 0;
+
+  if (type === "electricity") {
+    if (
+      [dayPrev, dayCurr, nightPrev, nightCurr].some(
+        (reading) => reading < 0 || reading > MAX_READING,
+      ) ||
+      dayCurr < dayPrev ||
+      nightCurr < nightPrev
+    ) {
+      return null;
+    }
+  } else {
+    if (gasPrev < 0 || gasCurr < 0 || gasCurr < gasPrev) return null;
   }
 
   const dayRate = toNumber(value.dayRate);
@@ -56,7 +63,11 @@ function normalizeRecord(raw: unknown): MeterRecord | null {
     nightRate && nightRate > 0 && nightRate <= MAX_RATE ? nightRate : DEFAULT_NIGHT_RATE;
   const gasRate = toNumber(value.gasRate);
   const safeGasRate =
-    gasRate && gasRate > 0 && gasRate <= MAX_RATE ? gasRate : DEFAULT_GAS_RATE;
+    gasRate && gasRate > 0 && gasRate <= MAX_RATE
+      ? gasRate
+      : type === "gas"
+        ? DEFAULT_GAS_RATE
+        : 0;
   const gasDeliveryFee = toNumber(value.gasDeliveryFee);
 
   const enteredAt =
@@ -78,11 +89,9 @@ function normalizeRecord(raw: unknown): MeterRecord | null {
       ? value.id
       : newId();
 
-  const safeGasPrev = typeof value.gasPrev === "number" ? value.gasPrev : 0;
-  const safeGasCurr = typeof value.gasCurr === "number" ? value.gasCurr : 0;
-
   return {
     id,
+    type,
     period: value.period,
     dayPrev,
     dayCurr,
@@ -102,8 +111,8 @@ function normalizeRecord(raw: unknown): MeterRecord | null {
       typeof value.updatedAt === "string" && !Number.isNaN(Date.parse(value.updatedAt))
         ? value.updatedAt
         : now,
-    gasPrev: safeGasPrev,
-    gasCurr: safeGasCurr,
+    gasPrev,
+    gasCurr,
     gasRate: safeGasRate,
     gasDeliveryFee: gasDeliveryFee ?? 0,
   };
@@ -126,14 +135,21 @@ export function parseBackup(raw: unknown): ParsedBackup {
       const source = value.settings as Record<string, unknown>;
       const dayRate = toNumber(source.dayRate);
       const nightRate = toNumber(source.nightRate);
+      const gasRate = toNumber(source.gasRate);
+      const gasDeliveryFee = toNumber(source.gasDeliveryFee);
       if (dayRate && nightRate && dayRate > 0 && nightRate > 0) {
-        settings = { dayRate, nightRate };
+        settings = {
+          dayRate,
+          nightRate,
+          gasRate: gasRate && gasRate > 0 ? gasRate : DEFAULT_GAS_RATE,
+          gasDeliveryFee: gasDeliveryFee && gasDeliveryFee >= 0 ? gasDeliveryFee : 0,
+        };
       }
     }
   }
 
   const byId = new Map<string, MeterRecord>();
-  const periods = new Set<string>();
+  const scopes = new Set<string>();
   let skipped = 0;
 
   for (const item of items) {
@@ -142,12 +158,13 @@ export function parseBackup(raw: unknown): ParsedBackup {
       skipped += 1;
       continue;
     }
-    if (byId.has(record.id) || periods.has(record.period)) {
+    const scope = `${record.type}:${record.period}`;
+    if (byId.has(record.id) || scopes.has(scope)) {
       skipped += 1;
       continue;
     }
     byId.set(record.id, record);
-    periods.add(record.period);
+    scopes.add(scope);
   }
 
   return { records: sortRecords([...byId.values()]), settings, skipped };

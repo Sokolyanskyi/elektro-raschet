@@ -6,6 +6,7 @@ import {
   formatDate,
   formatDateTime,
   formatKwh,
+  formatM3,
   formatMoney,
   formatNumber,
   monthLabel,
@@ -47,6 +48,7 @@ export function RecordCard({
 }: RecordCardProps) {
   const { locale, t } = useI18n();
   const usage = calculateUsage(record);
+  const isGas = record.type === "gas";
   const status = record.paid ? t("side.statusPaid") : t("side.statusUnpaid");
   const [payDate, setPayDate] = useState(todayISO());
   const [paidDate, setPaidDate] = useState(
@@ -68,7 +70,10 @@ export function RecordCard({
             <div>
               <h3>{monthLabel(record.period, locale)}</h3>
               <p>
-                {formatKwh(usage.totalUsage, locale)} ·{" "}
+                {isGas
+                  ? formatM3(usage.totalUsage, locale)
+                  : formatKwh(usage.totalUsage, locale)}{" "}
+                ·{" "}
                 {t("record.dataFrom", {
                   date: formatDate(record.enteredAt, locale),
                 })}
@@ -84,57 +89,83 @@ export function RecordCard({
         </div>
 
         <div className="record-breakdown">
-          <div className="breakdown-chip">
-            <span className="breakdown-name">
-              <SunIcon width={14} height={14} />
-              {t("common.day")}
-            </span>
-            <span className="breakdown-calc">
-              {formatNumber(usage.dayUsage, locale)} ×{" "}
-              {formatNumber(record.dayRate, locale)} ₴
-            </span>
-            <b>{formatMoney(usage.dayCost, locale)}</b>
-          </div>
-          <div className="breakdown-chip">
-            <span className="breakdown-name">
-              <MoonIcon width={14} height={14} />
-              {t("common.night")}
-            </span>
-            <span className="breakdown-calc">
-              {formatNumber(usage.nightUsage, locale)} ×{" "}
-              {formatNumber(record.nightRate, locale)} ₴
-            </span>
-            <b>{formatMoney(usage.nightCost, locale)}</b>
-          </div>
-          {usage.gasUsage > 0 || record.gasDeliveryFee > 0 ? (
-            <div className="breakdown-chip">
-              <span className="breakdown-name">
-                <FuelIcon width={14} height={14} />
-                {t("common.gas")}
-              </span>
-              <span className="breakdown-calc">
-                {formatNumber(usage.gasUsage, locale)} ×{" "}
-                {formatNumber(record.gasRate, locale)} ₴
-              </span>
-              <b>{formatMoney(usage.gasCost, locale)}</b>
-            </div>
-          ) : null}
+          {isGas ? (
+            <>
+              <div className="breakdown-chip">
+                <span className="breakdown-name">
+                  <FuelIcon width={14} height={14} />
+                  {t("common.gas")}
+                </span>
+                <span className="breakdown-calc">
+                  {formatNumber(usage.gasUsage, locale)} ×{" "}
+                  {formatNumber(record.gasRate, locale)} ₴
+                </span>
+                <b>{formatMoney(usage.gasUsage * record.gasRate, locale)}</b>
+              </div>
+              {record.gasDeliveryFee > 0 ? (
+                <div className="breakdown-chip">
+                  <span className="breakdown-name">
+                    <ReceiptIcon width={14} height={14} />
+                    {t("receipt.deliveryFee")}
+                  </span>
+                  <span className="breakdown-calc" />
+                  <b>{formatMoney(record.gasDeliveryFee, locale)}</b>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <div className="breakdown-chip">
+                <span className="breakdown-name">
+                  <SunIcon width={14} height={14} />
+                  {t("common.day")}
+                </span>
+                <span className="breakdown-calc">
+                  {formatNumber(usage.dayUsage, locale)} ×{" "}
+                  {formatNumber(record.dayRate, locale)} ₴
+                </span>
+                <b>{formatMoney(usage.dayCost, locale)}</b>
+              </div>
+              <div className="breakdown-chip">
+                <span className="breakdown-name">
+                  <MoonIcon width={14} height={14} />
+                  {t("common.night")}
+                </span>
+                <span className="breakdown-calc">
+                  {formatNumber(usage.nightUsage, locale)} ×{" "}
+                  {formatNumber(record.nightRate, locale)} ₴
+                </span>
+                <b>{formatMoney(usage.nightCost, locale)}</b>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="record-meta">
-          <span>
-            {t("record.metaDay", {
-              prev: formatNumber(record.dayPrev, locale),
-              curr: formatNumber(record.dayCurr, locale),
-            })}
-          </span>
-          <span className="meta-sep">·</span>
-          <span>
-            {t("record.metaNight", {
-              prev: formatNumber(record.nightPrev, locale),
-              curr: formatNumber(record.nightCurr, locale),
-            })}
-          </span>
+          {isGas ? (
+            <span>
+              {t("record.metaGas", {
+                prev: formatNumber(record.gasPrev, locale),
+                curr: formatNumber(record.gasCurr, locale),
+              })}
+            </span>
+          ) : (
+            <>
+              <span>
+                {t("record.metaDay", {
+                  prev: formatNumber(record.dayPrev, locale),
+                  curr: formatNumber(record.dayCurr, locale),
+                })}
+              </span>
+              <span className="meta-sep">·</span>
+              <span>
+                {t("record.metaNight", {
+                  prev: formatNumber(record.nightPrev, locale),
+                  curr: formatNumber(record.nightCurr, locale),
+                })}
+              </span>
+            </>
+          )}
           {record.note ? (
             <>
               <span className="meta-sep">·</span>

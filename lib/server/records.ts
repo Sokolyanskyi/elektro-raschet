@@ -1,5 +1,6 @@
-import { DEFAULT_GAS_RATE, isValidDate, isValidPeriod, MAX_RATE, MAX_READING } from "@/lib/calc";
-import type { MeterRecord } from "@/lib/types";
+import { DEFAULT_DAY_RATE, DEFAULT_NIGHT_RATE, isValidDate, isValidPeriod, MAX_RATE, MAX_READING } from "@/lib/calc";
+import { scopeKey } from "@/lib/records";
+import type { MeterRecord, MeterType } from "@/lib/types";
 import { kvCommand, kvPipeline, type CloudEnv } from "./auth";
 
 const IDS_KEY = "elec:ids";
@@ -16,6 +17,11 @@ function isFiniteNumber(value: unknown): value is number {
 /**
  * Проверяет и нормализует запись, пришедшую от клиента.
  * Возвращает null, если данные некорректны.
+ *
+ * У электрических записей газовые поля приводятся к нулю (если не заданы),
+ * у газовых — дневные и ночные показания нули, а тарифы электричества
+ * подставляются дефолтные, чтобы запись оставалась совместимой со старыми
+ * клиентами.
  */
 export function sanitizeRecord(raw: unknown, fallbackId?: string): MeterRecord | null {
   if (!raw || typeof raw !== "object") return null;
@@ -24,47 +30,44 @@ export function sanitizeRecord(raw: unknown, fallbackId?: string): MeterRecord |
   const period = typeof value.period === "string" ? value.period : "";
   if (!isValidPeriod(period)) return null;
 
-  const numberFields = [
-    "dayPrev",
-    "dayCurr",
-    "nightPrev",
-    "nightCurr",
-    "dayRate",
-    "nightRate",
-  ] as const;
+  const type: MeterType = value.type === "gas" ? "gas" : "electricity";
 
-  for (const field of numberFields) {
-    if (!isFiniteNumber(value[field])) return null;
+  const dayPrev = isFiniteNumber(value.dayPrev) ? value.dayPrev : 0;
+  const dayCurr = isFiniteNumber(value.dayCurr) ? value.dayCurr : 0;
+  const nightPrev = isFiniteNumber(value.nightPrev) ? value.nightPrev : 0;
+  const nightCurr = isFiniteNumber(value.nightCurr) ? value.nightCurr : 0;
+  const dayRate = isFiniteNumber(value.dayRate) ? value.dayRate : DEFAULT_DAY_RATE;
+  const nightRate = isFiniteNumber(value.nightRate) ? value.nightRate : DEFAULT_NIGHT_RATE;
+  const gasPrev = isFiniteNumber(value.gasPrev) ? value.gasPrev : 0;
+  const gasCurr = isFiniteNumber(value.gasCurr) ? value.gasCurr : 0;
+  const gasRate = isFiniteNumber(value.gasRate) ? value.gasRate : 0;
+  const gasDeliveryFee = isFiniteNumber(value.gasDeliveryFee) ? value.gasDeliveryFee : 0;
+
+  if (type === "electricity") {
+    if (
+      [dayPrev, dayCurr, nightPrev, nightCurr].some(
+        (reading) => reading < 0 || reading > MAX_READING,
+      )
+    ) {
+      return null;
+    }
+    if (dayCurr < dayPrev || nightCurr < nightPrev) return null;
+    if ([dayRate, nightRate].some((rate) => rate <= 0 || rate > MAX_RATE)) {
+      return null;
+    }
+    if (gasCurr < gasPrev || gasDeliveryFee < 0 || gasRate < 0 || gasRate > MAX_RATE) {
+      return null;
+    }
+  } else {
+    if (
+      [gasPrev, gasCurr].some((reading) => reading < 0 || reading > MAX_READING)
+    ) {
+      return null;
+    }
+    if (gasCurr < gasPrev) return null;
+    if (gasRate <= 0 || gasRate > MAX_RATE) return null;
+    if (gasDeliveryFee < 0 || gasDeliveryFee > MAX_RATE) return null;
   }
-
-  const dayPrev = value.dayPrev as number;
-  const dayCurr = value.dayCurr as number;
-  const nightPrev = value.nightPrev as number;
-  const nightCurr = value.nightCurr as number;
-  const dayRate = value.dayRate as number;
-  const nightRate = value.nightRate as number;
-
-  if (
-    [dayPrev, dayCurr, nightPrev, nightCurr].some(
-      (reading) => reading < 0 || reading > MAX_READING,
-    )
-  ) {
-    return null;
-  }
-  if (dayCurr < dayPrev || nightCurr < nightPrev) return null;
-  if (
-    [dayRate, nightRate].some((rate) => rate <= 0 || rate > MAX_RATE)
-  ) {
-    return null;
-  }
-
-  const gasPrev = typeof value.gasPrev === "number" ? value.gasPrev : 0;
-  const gasCurr = typeof value.gasCurr === "number" ? value.gasCurr : 0;
-  const gasRate = typeof value.gasRate === "number" ? value.gasRate : DEFAULT_GAS_RATE;
-  const gasDeliveryFee = typeof value.gasDeliveryFee === "number" ? value.gasDeliveryFee : 0;
-
-  if (gasCurr < gasPrev || gasDeliveryFee < 0) return null;
-  if (gasRate <= 0 || gasRate > MAX_RATE) return null;
 
   const enteredAt = typeof value.enteredAt === "string" ? value.enteredAt : "";
   if (!isValidDate(enteredAt)) return null;
@@ -92,6 +95,7 @@ export function sanitizeRecord(raw: unknown, fallbackId?: string): MeterRecord |
 
   return {
     id,
+    type,
     period,
     dayPrev,
     nightCurr,
@@ -165,7 +169,9 @@ export async function mergeRecords(
 ): Promise<{ added: number; updated: number; skipped: number }> {
   const existing = await listRecords(env);
   const byId = new Map(existing.map((record) => [record.id, record]));
-  const periods = new Map(existing.map((record) => [record.period, record.id]));
+  const byScope = new Map(
+    existing.map((record) => [scopeKey(record.type, record.period), record.id]),
+  );
 
   let added = 0;
   let updated = 0;
@@ -174,9 +180,9 @@ export async function mergeRecords(
 
   for (const record of incoming) {
     const existingRecord = byId.get(record.id);
-    const periodOwner = periods.get(record.period);
+    const scopeOwner = byScope.get(scopeKey(record.type, record.period));
 
-    if (periodOwner && periodOwner !== record.id && !existingRecord) {
+    if (scopeOwner && scopeOwner !== record.id && !existingRecord) {
       skipped += 1;
       continue;
     }
@@ -190,7 +196,7 @@ export async function mergeRecords(
     commands.push(["SET", recordKey(record.id), JSON.stringify(record)]);
     commands.push(["SADD", IDS_KEY, record.id]);
     byId.set(record.id, record);
-    periods.set(record.period, record.id);
+    byScope.set(scopeKey(record.type, record.period), record.id);
   }
 
   await kvPipeline(env, commands);

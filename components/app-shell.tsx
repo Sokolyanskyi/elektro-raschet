@@ -14,6 +14,7 @@ import { useRecords } from "@/lib/client/use-records";
 import {
   currentPeriod,
   formatKwh,
+  formatM3,
   formatMoney,
   formatMoneyPlain,
   formatNumber,
@@ -22,7 +23,7 @@ import {
   todayISO,
   yearOf,
 } from "@/lib/format";
-import type { MeterRecord, RecordDraft, Settings } from "@/lib/types";
+import type { MeterRecord, MeterType, RecordDraft, Settings } from "@/lib/types";
 import {
   buildReceiptHtml,
   receiptFileName,
@@ -34,6 +35,7 @@ import {
   BoltIcon,
   CloudIcon,
   DeviceIcon,
+  FuelIcon,
   GearIcon,
   MoonIcon,
   ShieldIcon,
@@ -41,6 +43,7 @@ import {
   WalletIcon,
 } from "./icons";
 import { LockScreen } from "./lock-screen";
+import { MeterNav } from "./meter-nav";
 import { ConfirmDialog } from "./modal";
 import { RecordForm } from "./record-form";
 import { ReceiptDialog } from "./receipt-dialog";
@@ -62,9 +65,10 @@ interface ToastState {
   tone: "success" | "error";
 }
 
-export function AppShell() {
+export function AppShell({ meter }: { meter: MeterType }) {
   const { locale, t } = useI18n();
   const store = useRecords();
+  const isGas = meter === "gas";
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | "all">(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
@@ -90,8 +94,15 @@ export function AppShell() {
     }
   }, [store.mode, store.error, notify]);
 
+  // Записи этого счётчика: электро и газ живут в одном хранилище,
+  // каждая страница работает только со своим типом.
+  const records = useMemo(
+    () => store.records.filter((record) => record.type === meter),
+    [store.records, meter],
+  );
+
   const editing = editingId
-    ? store.records.find((record) => record.id === editingId) ?? null
+    ? records.find((record) => record.id === editingId) ?? null
     : null;
 
   const currentYear = new Date().getFullYear();
@@ -100,7 +111,7 @@ export function AppShell() {
     let debt = 0;
     let unpaidCount = 0;
 
-    for (const record of store.records) {
+    for (const record of records) {
       if (!record.paid) {
         const usage = calculateUsage(record);
         debt += usage.total;
@@ -112,27 +123,27 @@ export function AppShell() {
       debt: Math.round(debt * 100) / 100,
       unpaidCount,
     };
-  }, [store.records]);
+  }, [records]);
 
   const activeMonthRecord = useMemo(() => {
     const chosen = selectedMonth
-      ? store.records.find((record) => record.period === selectedMonth)
+      ? records.find((record) => record.period === selectedMonth)
       : null;
     if (chosen && (selectedYear === "all" || yearOf(chosen.period) === selectedYear)) {
       return chosen;
     }
     return (
-      store.records.find(
+      records.find(
         (record) => selectedYear === "all" || yearOf(record.period) === selectedYear,
       ) ?? null
     );
-  }, [selectedMonth, selectedYear, store.records]);
+  }, [selectedMonth, selectedYear, records]);
 
   const activeMonthUsage = activeMonthRecord
     ? calculateUsage(activeMonthRecord)
     : null;
 
-  const latest = store.records[0] ?? null;
+  const latest = records[0] ?? null;
   const latestUsage = latest ? calculateUsage(latest) : null;
 
   useEffect(() => {
@@ -140,13 +151,13 @@ export function AppShell() {
     if (store.mode !== "local" && store.mode !== "cloud") return;
     initialYearApplied.current = true;
     if (
-      store.records.length > 0 &&
+      records.length > 0 &&
       selectedYear !== "all" &&
-      !store.records.some((record) => yearOf(record.period) === selectedYear)
+      !records.some((record) => yearOf(record.period) === selectedYear)
     ) {
-      setSelectedYear(yearOf(store.records[0].period));
+      setSelectedYear(yearOf(records[0].period));
     }
-  }, [store.mode, store.records, selectedYear]);
+  }, [store.mode, records, selectedYear]);
 
   const handleSave = useCallback(
     async (draft: RecordDraft, recordId?: string) => {
@@ -233,6 +244,7 @@ export function AppShell() {
   const handleExportCsv = () => {
     const rows: (string | number)[][] = [
       [
+        t("csv.type"),
         t("csv.month"),
         t("csv.period"),
         t("csv.dayPrev"),
@@ -261,6 +273,7 @@ export function AppShell() {
     for (const record of store.records) {
       const usage = calculateUsage(record);
       rows.push([
+        record.type === "gas" ? t("form.tabGas") : t("form.tabElectricity"),
         monthLabel(record.period, locale),
         record.period,
         formatNumber(record.dayPrev, locale),
@@ -408,13 +421,19 @@ export function AppShell() {
       </>
     ) : null;
 
+  const monthUsage = activeMonthUsage
+    ? isGas
+      ? formatM3(activeMonthUsage.totalUsage, locale)
+      : formatKwh(activeMonthUsage.totalUsage, locale)
+    : "—";
+
   return (
     <>
       <div className="page" id="top">
         <header className="topbar">
           <a className="brand" href="#top" aria-label={t("app.home")}>
             <span className="brand-mark">
-              <BoltIcon width={20} height={20} />
+              {isGas ? <FuelIcon width={20} height={20} /> : <BoltIcon width={20} height={20} />}
             </span>
             <span className="brand-text">
               <b>{t("app.name")}</b>
@@ -443,26 +462,44 @@ export function AppShell() {
         </header>
 
         <main>
+          <MeterNav />
+
           <section className="hero">
             <div className="hero-copy">
               <p className="eyebrow">
                 {t("hero.eyebrow", { month: monthLabel(currentPeriod(), locale) })}
               </p>
               <h1>
-                {t("hero.title1")}
+                {isGas ? t("heroGas.title1") : t("hero.title1")}
                 <br />
-                <span>{t("hero.title2")}</span>
+                <span>{isGas ? t("heroGas.title2") : t("hero.title2")}</span>
               </h1>
-              <p className="hero-sub">{t("hero.subtitle")}</p>
+              <p className="hero-sub">{isGas ? t("heroGas.subtitle") : t("hero.subtitle")}</p>
               <div className="rate-chips">
-                <span className="rate-chip rate-chip-day">
-                  <SunIcon width={16} height={16} />
-                  {t("common.day")} <b>{formatNumber(store.settings.dayRate, locale)} ₴</b>
-                </span>
-                <span className="rate-chip rate-chip-night">
-                  <MoonIcon width={16} height={16} />
-                  {t("common.night")} <b>{formatNumber(store.settings.nightRate, locale)} ₴</b>
-                </span>
+                {isGas ? (
+                  <>
+                    <span className="rate-chip rate-chip-gas">
+                      <FuelIcon width={16} height={16} />
+                      {t("common.gas")} <b>{formatNumber(store.settings.gasRate, locale)} ₴</b>
+                    </span>
+                    <span className="rate-chip rate-chip-day">
+                      <WalletIcon width={16} height={16} />
+                      {t("settings.gasDeliveryLabel").replace(/,.*$/, "")}{" "}
+                      <b>{formatNumber(store.settings.gasDeliveryFee, locale)} ₴</b>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="rate-chip rate-chip-day">
+                      <SunIcon width={16} height={16} />
+                      {t("common.day")} <b>{formatNumber(store.settings.dayRate, locale)} ₴</b>
+                    </span>
+                    <span className="rate-chip rate-chip-night">
+                      <MoonIcon width={16} height={16} />
+                      {t("common.night")} <b>{formatNumber(store.settings.nightRate, locale)} ₴</b>
+                    </span>
+                  </>
+                )}
                 <button
                   type="button"
                   className="link-btn"
@@ -485,9 +522,7 @@ export function AppShell() {
               </div>
               <div className="stat">
                 <span className="stat-label">{t("stats.monthUsage")}</span>
-                <b className="stat-value">
-                  {activeMonthUsage ? formatKwh(activeMonthUsage.totalUsage, locale) : "—"}
-                </b>
+                <b className="stat-value">{monthUsage}</b>
                 <span className="stat-sub">
                   {activeMonthRecord
                     ? monthLabel(activeMonthRecord.period, locale)
@@ -533,8 +568,9 @@ export function AppShell() {
 
           <div className="workspace">
             <RecordForm
-              key={editing?.id ?? "new"}
-              records={store.records}
+              key={`${meter}-${editing?.id ?? "new"}`}
+              meter={meter}
+              records={records}
               editing={editing}
               defaultRates={store.settings}
               busy={store.busy}
@@ -545,39 +581,75 @@ export function AppShell() {
             />
 
             <aside className="side-column">
-              <div className="card side-card">
-                <div className="side-head">
-                  <span>{t("side.ratesTitle")}</span>
-                  <button
-                    type="button"
-                    className="link-btn"
-                    onClick={() => setSettingsOpen(true)}
-                  >
-                    {t("common.change")}
-                  </button>
-                </div>
-                <div className="side-rate side-rate-day">
-                  <span className="tariff-icon tariff-day">
-                    <SunIcon width={18} height={18} />
-                  </span>
-                  <div>
-                    <span>{t("common.day")}</span>
-                    <small>{t("side.dayHours")}</small>
+              {isGas ? (
+                <div className="card side-card">
+                  <div className="side-head">
+                    <span>{t("side.ratesTitle")}</span>
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={() => setSettingsOpen(true)}
+                    >
+                      {t("common.change")}
+                    </button>
                   </div>
-                  <b>{formatMoney(store.settings.dayRate, locale)}</b>
-                </div>
-                <div className="side-rate side-rate-night">
-                  <span className="tariff-icon tariff-night">
-                    <MoonIcon width={18} height={18} />
-                  </span>
-                  <div>
-                    <span>{t("common.night")}</span>
-                    <small>{t("side.nightHours")}</small>
+                  <div className="side-rate side-rate-gas">
+                    <span className="tariff-icon tariff-gas">
+                      <FuelIcon width={18} height={18} />
+                    </span>
+                    <div>
+                      <span>{t("common.gas")}</span>
+                      <small>{t("side.perM3")}</small>
+                    </div>
+                    <b>{formatMoney(store.settings.gasRate, locale)}</b>
                   </div>
-                  <b>{formatMoney(store.settings.nightRate, locale)}</b>
+                  <div className="side-rate side-rate-gas">
+                    <span className="tariff-icon tariff-gas">
+                      <WalletIcon width={18} height={18} />
+                    </span>
+                    <div>
+                      <span>{t("receipt.deliveryFee")}</span>
+                      <small>{t("side.deliveryMonthly")}</small>
+                    </div>
+                    <b>{formatMoney(store.settings.gasDeliveryFee, locale)}</b>
+                  </div>
+                  <p className="side-note">{t("side.gasRateNote")}</p>
                 </div>
-                <p className="side-note">{t("side.rateNote")}</p>
-              </div>
+              ) : (
+                <div className="card side-card">
+                  <div className="side-head">
+                    <span>{t("side.ratesTitle")}</span>
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={() => setSettingsOpen(true)}
+                    >
+                      {t("common.change")}
+                    </button>
+                  </div>
+                  <div className="side-rate side-rate-day">
+                    <span className="tariff-icon tariff-day">
+                      <SunIcon width={18} height={18} />
+                    </span>
+                    <div>
+                      <span>{t("common.day")}</span>
+                      <small>{t("side.dayHours")}</small>
+                    </div>
+                    <b>{formatMoney(store.settings.dayRate, locale)}</b>
+                  </div>
+                  <div className="side-rate side-rate-night">
+                    <span className="tariff-icon tariff-night">
+                      <MoonIcon width={18} height={18} />
+                    </span>
+                    <div>
+                      <span>{t("common.night")}</span>
+                      <small>{t("side.nightHours")}</small>
+                    </div>
+                    <b>{formatMoney(store.settings.nightRate, locale)}</b>
+                  </div>
+                  <p className="side-note">{t("side.rateNote")}</p>
+                </div>
+              )}
 
               {latest && latestUsage ? (
                 <div className="card side-card">
@@ -599,7 +671,11 @@ export function AppShell() {
                   </div>
                   <div className="latest-sum">
                     <strong>{formatMoney(latestUsage.total, locale)}</strong>
-                    <span>{formatKwh(latestUsage.totalUsage, locale)}</span>
+                    <span>
+                      {isGas
+                        ? formatM3(latestUsage.totalUsage, locale)
+                        : formatKwh(latestUsage.totalUsage, locale)}
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -613,7 +689,7 @@ export function AppShell() {
               ) : (
                 <div className="card side-card side-empty">
                   <span className="side-empty-icon">
-                    <BoltIcon width={20} height={20} />
+                    {isGas ? <FuelIcon width={20} height={20} /> : <BoltIcon width={20} height={20} />}
                   </span>
                   <b>{t("side.emptyTitle")}</b>
                   <p>{t("side.emptyText")}</p>
@@ -637,7 +713,8 @@ export function AppShell() {
           </div>
 
           <History
-            records={store.records}
+            meter={meter}
+            records={records}
             selectedYear={selectedYear}
             selectedMonth={activeMonthRecord?.period ?? null}
             currentYear={currentYear}
@@ -658,12 +735,16 @@ export function AppShell() {
 
         <footer className="footer">
           <div>
-            <BoltIcon width={15} height={15} />
+            {isGas ? <FuelIcon width={15} height={15} /> : <BoltIcon width={15} height={15} />}
             <span>
-              {t("footer.summary", {
-                day: formatNumber(store.settings.dayRate, locale),
-                night: formatNumber(store.settings.nightRate, locale),
-              })}
+              {isGas
+                ? t("footer.summaryGas", {
+                    gas: formatNumber(store.settings.gasRate, locale),
+                  })
+                : t("footer.summary", {
+                    day: formatNumber(store.settings.dayRate, locale),
+                    night: formatNumber(store.settings.nightRate, locale),
+                  })}
             </span>
           </div>
           <button type="button" className="link-btn" onClick={() => setSettingsOpen(true)}>

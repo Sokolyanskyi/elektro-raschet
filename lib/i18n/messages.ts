@@ -363,6 +363,27 @@ const ru = {
   "api.network": "Нет связи с сервером. Проверьте интернет.",
   "api.request_failed": "Не удалось выполнить запрос",
   "api.unexpected": "Что-то пошло не так. Попробуйте ещё раз.",
+
+  "common.m3": "м³",
+  "nav.meterLabel": "Тип счётчика",
+  "heroGas.title1": "Газ посчитан.",
+  "heroGas.title2": "История сохранена.",
+  "heroGas.subtitle":
+    "Внесите показания газового счётчика в м³ — сумма посчитается автоматически, включая плату за доставку. Отметьте оплату, и приложение запомнит дату навсегда.",
+  "side.perM3": "за 1 м³",
+  "side.deliveryMonthly": "ежемесячно",
+  "side.gasRateNote": "Цена за 1 м³ и плата за доставку для новых расчётов.",
+  "record.metaGas": "Газ: {prev} → {curr}",
+  "form.breakdownGas": "Газ · {m3} м³ × {rate}",
+  "form.totalM3": "м³ всего",
+  "form.gasRateUnit": "₴ / м³",
+  "form.gasDeliveryHint": "Ежемесячная плата за распределение газа",
+  "receipt.gasSubtitle": "Подтверждение оплаты газа",
+  "receipt.deliveryFee": "Плата за доставку газа",
+  "settings.gasRateLabel": "Газ, ₴/м³",
+  "settings.gasDeliveryLabel": "Доставка газа, ₴/мес",
+  "footer.summaryGas": "Личный расчёт газа · {gas} ₴ за м³",
+  "csv.type": "Тип",
 } as const;
 
 export type MessageKey = keyof typeof ru;
@@ -724,6 +745,27 @@ const uk: Record<MessageKey, string> = {
   "api.network": "Немає зв'язку із сервером. Перевірте інтернет.",
   "api.request_failed": "Не вдалося виконати запит",
   "api.unexpected": "Щось пішло не так. Спробуйте ще раз.",
+
+  "common.m3": "м³",
+  "nav.meterLabel": "Тип лічильника",
+  "heroGas.title1": "Газ пораховано.",
+  "heroGas.title2": "Історія збережена.",
+  "heroGas.subtitle":
+    "Внесіть показання газового лічильника в м³ — сума розрахується автоматично, разом із платою за доставку. Позначте оплату, і застосунок назавжди запам'ятає дату.",
+  "side.perM3": "за 1 м³",
+  "side.deliveryMonthly": "щомісяця",
+  "side.gasRateNote": "Ціна за 1 м³ і плата за доставку для нових розрахунків.",
+  "record.metaGas": "Газ: {prev} → {curr}",
+  "form.breakdownGas": "Газ · {m3} м³ × {rate}",
+  "form.totalM3": "м³ усього",
+  "form.gasRateUnit": "₴ / м³",
+  "form.gasDeliveryHint": "Щомісячна плата за розподіл газу",
+  "receipt.gasSubtitle": "Підтвердження оплати газу",
+  "receipt.deliveryFee": "Плата за доставку газу",
+  "settings.gasRateLabel": "Газ, ₴/м³",
+  "settings.gasDeliveryLabel": "Доставка газу, ₴/міс",
+  "footer.summaryGas": "Особистий розрахунок газу · {gas} ₴ за м³",
+  "csv.type": "Тип",
 };
 
 const en: Record<MessageKey, string> = {
@@ -1082,6 +1124,27 @@ const en: Record<MessageKey, string> = {
   "api.network": "No connection to the server. Check your internet.",
   "api.request_failed": "Could not complete the request",
   "api.unexpected": "Something went wrong. Please try again.",
+
+  "common.m3": "m³",
+  "nav.meterLabel": "Meter type",
+  "heroGas.title1": "Gas calculated.",
+  "heroGas.title2": "History kept.",
+  "heroGas.subtitle":
+    "Enter your gas meter readings in m³ — the total is calculated automatically, including the delivery fee. Mark the bill as paid and the app remembers the date for good.",
+  "side.perM3": "per 1 m³",
+  "side.deliveryMonthly": "monthly",
+  "side.gasRateNote": "Price per 1 m³ and the delivery fee for new records.",
+  "record.metaGas": "Gas: {prev} → {curr}",
+  "form.breakdownGas": "Gas · {m3} m³ × {rate}",
+  "form.totalM3": "m³ total",
+  "form.gasRateUnit": "₴ / m³",
+  "form.gasDeliveryHint": "Monthly gas distribution fee",
+  "receipt.gasSubtitle": "Gas payment confirmation",
+  "receipt.deliveryFee": "Gas delivery fee",
+  "settings.gasRateLabel": "Gas, ₴/m³",
+  "settings.gasDeliveryLabel": "Gas delivery, ₴/mo",
+  "footer.summaryGas": "Personal gas log · {gas} ₴ per m³",
+  "csv.type": "Type",
 };
 
 const pl: Record<MessageKey, string> = {
@@ -1441,6 +1504,27 @@ const pl: Record<MessageKey, string> = {
   "api.network": "Brak połączenia z serwerem. Sprawdź internet.",
   "api.request_failed": "Nie udało się wykonać żądania",
   "api.unexpected": "Coś poszło nie tak. Spróbuj ponownie.",
+
+  "common.m3": "m³",
+  "nav.meterLabel": "Typ licznika",
+  "heroGas.title1": "Gaz policzony.",
+  "heroGas.title2": "Historia zapisana.",
+  "heroGas.subtitle":
+    "Wpisz odczyty licznika gazu w m³ — kwota wyliczy się automatycznie, łącznie z opłatą za dostawę. Oznacz płatność, a aplikacja zapamięta datę na zawsze.",
+  "side.perM3": "za 1 m³",
+  "side.deliveryMonthly": "miesięcznie",
+  "side.gasRateNote": "Cena za 1 m³ i opłata za dostawę dla nowych rozliczeń.",
+  "record.metaGas": "Gaz: {prev} → {curr}",
+  "form.breakdownGas": "Gaz · {m3} m³ × {rate}",
+  "form.totalM3": "m³ łącznie",
+  "form.gasRateUnit": "₴ / m³",
+  "form.gasDeliveryHint": "Miesięczna opłata za dystrybucję gazu",
+  "receipt.gasSubtitle": "Potwierdzenie opłaty za gaz",
+  "receipt.deliveryFee": "Opłata za dostawę gazu",
+  "settings.gasRateLabel": "Gaz, ₴/m³",
+  "settings.gasDeliveryLabel": "Dostawa gazu, ₴/mies.",
+  "footer.summaryGas": "Osobiste rozliczenie gazu · {gas} ₴ za m³",
+  "csv.type": "Typ",
 };
 
 const zh: Record<MessageKey, string> = {
@@ -1771,6 +1855,27 @@ const zh: Record<MessageKey, string> = {
   "api.network": "无法连接服务器。请检查网络。",
   "api.request_failed": "请求失败",
   "api.unexpected": "出现问题，请重试。",
+
+  "common.m3": "立方米",
+  "nav.meterLabel": "表计类型",
+  "heroGas.title1": "燃气已算好。",
+  "heroGas.title2": "历史已保存。",
+  "heroGas.subtitle":
+    "输入以立方米为单位的燃气表读数 — 金额会自动算出，包含输送费。标记支付后，应用会永久记住付款日期。",
+  "side.perM3": "每 1 立方米",
+  "side.deliveryMonthly": "每月",
+  "side.gasRateNote": "新记录使用每 1 立方米的价格和输送费。",
+  "record.metaGas": "燃气：{prev} → {curr}",
+  "form.breakdownGas": "燃气 · {m3} 立方米 × {rate}",
+  "form.totalM3": "立方米合计",
+  "form.gasRateUnit": "₴ / 立方米",
+  "form.gasDeliveryHint": "每月燃气输配费",
+  "receipt.gasSubtitle": "燃气缴费确认",
+  "receipt.deliveryFee": "燃气输送费",
+  "settings.gasRateLabel": "燃气，₴/立方米",
+  "settings.gasDeliveryLabel": "燃气输送，₴/月",
+  "footer.summaryGas": "个人燃气记录 · {gas} ₴/立方米",
+  "csv.type": "类型",
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = {

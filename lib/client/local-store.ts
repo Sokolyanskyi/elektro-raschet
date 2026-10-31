@@ -1,17 +1,23 @@
 import {
   DEFAULT_DAY_RATE,
+  DEFAULT_GAS_RATE,
   DEFAULT_NIGHT_RATE,
   isValidDate,
   isValidPeriod,
 } from "@/lib/calc";
+import { normalizeRecords, scopeKey, sortRecords } from "@/lib/records";
 import type { MeterRecord, Settings } from "@/lib/types";
 
 const RECORDS_KEY = "elec.records.v1";
 const SETTINGS_KEY = "elec.settings.v1";
 
+export { newId, sortRecords } from "@/lib/records";
+
 export const DEFAULT_SETTINGS: Settings = {
   dayRate: DEFAULT_DAY_RATE,
   nightRate: DEFAULT_NIGHT_RATE,
+  gasRate: DEFAULT_GAS_RATE,
+  gasDeliveryFee: 0,
 };
 
 function isRecord(value: unknown): value is MeterRecord {
@@ -23,16 +29,12 @@ function isRecord(value: unknown): value is MeterRecord {
     isValidPeriod(record.period) &&
     typeof record.enteredAt === "string" &&
     isValidDate(record.enteredAt) &&
-    ["dayPrev", "dayCurr", "nightPrev", "nightCurr", "dayRate", "nightRate", "gasPrev", "gasCurr", "gasRate", "gasDeliveryFee"].every(
+    ["dayPrev", "dayCurr", "nightPrev", "nightCurr", "dayRate", "nightRate"].every(
       (key) =>
         typeof record[key] === "number" && Number.isFinite(record[key] as number),
     ) &&
     typeof record.paid === "boolean"
   );
-}
-
-export function sortRecords(records: MeterRecord[]): MeterRecord[] {
-  return [...records].sort((a, b) => (a.period < b.period ? 1 : a.period > b.period ? -1 : 0));
 }
 
 export function loadLocalRecords(): MeterRecord[] {
@@ -42,7 +44,11 @@ export function loadLocalRecords(): MeterRecord[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return sortRecords(parsed.filter(isRecord));
+    const normalized = normalizeRecords(parsed.filter(isRecord) as MeterRecord[]);
+    // Миграция старого формата (без type, со встроенным газом) пишется сразу,
+    // чтобы данные не потерялись при сбое до первого сохранения.
+    if (normalized.changed) saveLocalRecords(normalized.records);
+    return normalized.records;
   } catch {
     return [];
   }
@@ -67,7 +73,15 @@ export function loadLocalSettings(): Settings {
       typeof parsed.nightRate === "number" && parsed.nightRate > 0
         ? parsed.nightRate
         : DEFAULT_NIGHT_RATE;
-    return { dayRate, nightRate };
+    const gasRate =
+      typeof parsed.gasRate === "number" && parsed.gasRate > 0
+        ? parsed.gasRate
+        : DEFAULT_GAS_RATE;
+    const gasDeliveryFee =
+      typeof parsed.gasDeliveryFee === "number" && parsed.gasDeliveryFee >= 0
+        ? parsed.gasDeliveryFee
+        : 0;
+    return { dayRate, nightRate, gasRate, gasDeliveryFee };
   } catch {
     return DEFAULT_SETTINGS;
   }
@@ -78,14 +92,7 @@ export function saveLocalSettings(settings: Settings): void {
   window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
-export function newId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `r-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-/** Объединение записей без дублей: сначала по id, затем по расчётному месяцу. */
+/** Объединение записей без дублей: сначала по id, затем по месяцу в рамках типа. */
 export function mergeRecordLists(
   existing: MeterRecord[],
   incoming: MeterRecord[],
@@ -97,7 +104,9 @@ export function mergeRecordLists(
 } {
   const records = sortRecords(existing);
   const byId = new Map(records.map((record) => [record.id, record]));
-  const byPeriod = new Map(records.map((record) => [record.period, record.id]));
+  const byScope = new Map(
+    records.map((record) => [scopeKey(record.type, record.period), record.id]),
+  );
 
   let added = 0;
   let updated = 0;
@@ -105,9 +114,9 @@ export function mergeRecordLists(
 
   for (const record of incoming) {
     const sameId = byId.get(record.id);
-    const periodOwner = byPeriod.get(record.period);
+    const scopeOwner = byScope.get(scopeKey(record.type, record.period));
 
-    if (periodOwner && periodOwner !== record.id && !sameId) {
+    if (scopeOwner && scopeOwner !== record.id && !sameId) {
       skipped += 1;
       continue;
     }
@@ -118,7 +127,7 @@ export function mergeRecordLists(
     } else {
       added += 1;
       byId.set(record.id, record);
-      byPeriod.set(record.period, record.id);
+      byScope.set(scopeKey(record.type, record.period), record.id);
     }
   }
 

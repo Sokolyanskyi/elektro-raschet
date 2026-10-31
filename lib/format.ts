@@ -9,6 +9,14 @@ const KWH_UNIT: Record<Locale, string> = {
   zh: "千瓦时",
 };
 
+const M3_UNIT: Record<Locale, string> = {
+  ru: "м³",
+  uk: "м³",
+  en: "m³",
+  pl: "m³",
+  zh: "立方米",
+};
+
 const moneyFormatters = new Map<Locale, Intl.NumberFormat>();
 const moneyPlainFormatters = new Map<Locale, Intl.NumberFormat>();
 const numberFormatters = new Map<Locale, Intl.NumberFormat>();
@@ -123,6 +131,10 @@ export function formatNumber(value: number, locale: Locale = "ru"): string {
 
 export function formatKwh(value: number, locale: Locale = "ru"): string {
   return `${formatNumber(value, locale)} ${KWH_UNIT[locale] ?? KWH_UNIT.ru}`;
+}
+
+export function formatM3(value: number, locale: Locale = "ru"): string {
+  return `${formatNumber(value, locale)} ${M3_UNIT[locale] ?? M3_UNIT.ru}`;
 }
 
 /** Русские формы множественного числа: 1 расчёт, 2 расчёта, 5 расчётов. */

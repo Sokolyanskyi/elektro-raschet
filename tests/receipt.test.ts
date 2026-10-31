@@ -11,6 +11,7 @@ import type { MeterRecord } from "../lib/types";
 
 const record: MeterRecord = {
   id: "qa-receipt-2026-10",
+  type: "electricity",
   period: "2026-10",
   dayPrev: 10000,
   nightPrev: 5000,

@@ -6,6 +6,7 @@ import type { MeterRecord } from "../lib/types";
 function record(overrides: Partial<MeterRecord> = {}): MeterRecord {
   return {
     id: "rec-1",
+  type: "electricity",
     period: "2026-10",
     dayPrev: 100,
     dayCurr: 200,
@@ -35,7 +36,7 @@ describe("parseBackup", () => {
       records: [record()],
     });
     expect(parsed.records).toHaveLength(1);
-    expect(parsed.settings).toEqual({ dayRate: 5, nightRate: 2.5 });
+    expect(parsed.settings).toEqual({ dayRate: 5, nightRate: 2.5, gasRate: 7.96, gasDeliveryFee: 0 });
     expect(parsed.skipped).toBe(0);
   });
 

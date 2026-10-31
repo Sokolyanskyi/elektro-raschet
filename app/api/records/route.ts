@@ -67,7 +67,11 @@ export async function POST(request: Request) {
 
   try {
     const existing = await listRecords(auth.env);
-    if (existing.some((item) => item.period === record.period)) {
+    if (
+      existing.some(
+        (item) => item.period === record.period && item.type === record.type,
+      )
+    ) {
       return NextResponse.json(
         { error: "duplicate_period" },
         { status: 409 },
