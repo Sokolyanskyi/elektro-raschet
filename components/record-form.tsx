@@ -27,9 +27,11 @@ import {
   CalendarIcon,
   CheckIcon,
   ChevronDownIcon,
+  FlameIcon,
   FuelIcon,
   MoonIcon,
   SunIcon,
+  TruckIcon,
   WalletIcon,
 } from "./icons";
 import { MonthPicker } from "./month-picker";
@@ -70,13 +72,18 @@ interface FieldProps {
   htmlFor: string;
   hint?: string;
   error?: string;
+  /** Небольшая иконка перед подписью поля. */
+  labelIcon?: ReactNode;
   children: ReactNode;
 }
 
-function Field({ label, htmlFor, hint, error, children }: FieldProps) {
+function Field({ label, htmlFor, hint, error, labelIcon, children }: FieldProps) {
   return (
     <div className={`field ${error ? "has-error" : ""}`}>
-      <label htmlFor={htmlFor}>{label}</label>
+      <label htmlFor={htmlFor}>
+        {labelIcon}
+        {label}
+      </label>
       {children}
       {error ? <p className="field-error">{error}</p> : hint ? <p className="field-hint">{hint}</p> : null}
     </div>
@@ -541,7 +548,7 @@ export function RecordForm({
               <div className="meter-top">
                 <div className="meter-title">
                   <span className="tariff-icon tariff-gas">
-                    <FuelIcon width={18} height={18} />
+                    <FlameIcon width={20} height={20} />
                   </span>
                   <div>
                     <b>{t("common.gas")}</b>
@@ -617,6 +624,11 @@ export function RecordForm({
                   htmlFor="gasDeliveryFee"
                   error={visibleError("gasDeliveryFee")}
                   hint={t("form.gasDeliveryHint")}
+                  labelIcon={
+                    <span className="field-label-icon is-truck">
+                      <TruckIcon width={14} height={14} />
+                    </span>
+                  }
                 >
                   <div className="input-with-unit">
                     <input

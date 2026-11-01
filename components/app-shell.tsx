@@ -176,9 +176,8 @@ export function AppShell({ meter }: { meter: MeterType }) {
   const markPaid = async (record: MeterRecord, paidOn: string) => {
     try {
       const updated = await store.setPaid(record.id, true, paidAtFromDate(paidOn));
-      // Квитанция не скачивается сама: пользователь сохраняет её кнопкой
-      // в открытом диалоге или позже из карточки записи.
-      setReceiptRecord(updated);
+      // Квитанция не скачивается и не открывается сама: она доступна кнопкой
+      // в карточке записи и в истории, чтобы оплата не прерывалась диалогом.
       notify(t("toast.paid", { month: monthLabel(updated.period, locale) }));
     } catch (cause) {
       notify(cause instanceof Error ? cause.message : t("toast.paidError"), "error");

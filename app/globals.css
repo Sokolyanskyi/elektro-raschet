@@ -326,6 +326,9 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  /* Полотно документа всегда в цвет темы: иначе при перерисовке страницы
+     (в т.ч. в PWA при переходе между вкладками) успевает мигнуть белый фон. */
+  background-color: var(--bg);
 }
 
 body {
@@ -1495,6 +1498,34 @@ a {
   100% {
     transform: translateX(0) translateY(0);
   }
+}
+
+/* ------------------- animated gas icons (gas form card) ------------------ */
+
+.meter-gas .tariff-gas {
+  background: rgba(47, 141, 255, 0.14);
+  color: #2f8dff;
+}
+
+.meter-gas .tariff-gas svg {
+  transform-origin: 50% 85%;
+  animation: rate-flame-flicker 0.9s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 4px rgba(47, 141, 255, 0.5));
+}
+
+.field-label-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 5px;
+  vertical-align: -2px;
+}
+
+.field-label-icon.is-truck {
+  color: var(--brand);
+}
+
+.field-label-icon.is-truck svg {
+  animation: rate-truck-drive 1.4s ease-in-out infinite;
 }
 
 
