@@ -102,10 +102,19 @@ export function detectTheme(): ThemeId {
 
 /**
  * Runs before first paint so a saved dark scheme never flashes the light one.
+ * It also creates/updates the theme-color meta tag so the PWA status bar
+ * matches the scheme immediately — Next does not manage this tag (a static
+ * viewport themeColor would reset it to light on client-side navigation).
  * Keep it free of template literals and optional chaining for old browsers.
  */
+const BAR_COLORS: Record<ThemeId, string> = Object.fromEntries(
+  THEMES.map((id) => [id, THEME_META[id].barColor]),
+) as Record<ThemeId, string>;
+
 export const THEME_INIT_SCRIPT = `(function(){try{var v=${JSON.stringify(
   THEMES,
+)};var b=${JSON.stringify(
+  BAR_COLORS,
 )};var t=localStorage.getItem(${JSON.stringify(
   THEME_STORAGE_KEY,
-)});if(v.indexOf(t)<0){t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"midnight":"classic";}document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;
+)});if(v.indexOf(t)<0){t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"midnight":"classic";}var d=document.documentElement;d.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement("meta");m.setAttribute("name","theme-color");document.head.appendChild(m);}m.setAttribute("content",b[t]||b.classic);}catch(e){}})();`;

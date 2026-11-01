@@ -231,12 +231,14 @@ describe("receipt (gas)", () => {
     expect(receiptFileName(gas)).toMatch(/^gas-2026-10-[a-z0-9]{6}\.html$/);
   });
 
-  it("в квитанции газа есть строка доставки и итог с доставкой", () => {
+  it("в квитанции газа расход и доставка в отдельных строках, итог с доставкой", () => {
     const labels = receiptLabels((key, vars) => translate("ru", key, vars), gas);
     const html = buildReceiptHtml(gas, "ru", labels);
     expect(html).toContain("Плата за доставку газа");
     expect(html).toContain("Подтверждение оплаты газа");
-    expect(html).toContain("258,80"); // 30 × 7.96 + 20 = 258.80
+    expect(html).toContain("238,80"); // 30 м³ × 7.96 = 238.80 (чистый расход)
+    expect(html).toContain("20,00"); // доставка отдельной строкой
+    expect(html).toContain("258,80"); // итог: расход + доставка
     expect(html).not.toContain("День");
   });
 });

@@ -28,8 +28,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  // The provider updates this meta when the user picks another colour scheme.
-  themeColor: "#f3f5fb",
+  // theme-color не задаётся статически: в PWA при переходах между страницами
+  // Next вернул бы светлый цвет из этого поля, и статус-бар мигал белым.
+  // Мета-тег управляется THEME_INIT_SCRIPT (до первой отрисовки) и ThemeProvider.
 };
 
 export default function RootLayout({

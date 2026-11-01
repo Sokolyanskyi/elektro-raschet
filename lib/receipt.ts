@@ -1,4 +1,4 @@
-import { calculateUsage } from "@/lib/calc";
+import { calculateUsage, round2 } from "@/lib/calc";
 import {
   formatDate,
   formatDateTime,
@@ -133,7 +133,9 @@ export function buildReceiptHtml(
     </tr>`;
 
   const rows = isGas
-    ? `${row(labels.gas, record.gasPrev, record.gasCurr, usage.gasUsage, record.gasRate, usage.gasCost)}
+    ? // В газовой квитанции доставка вынесена отдельной строкой, поэтому в
+      // строке счётчика показываем чистый расход: м³ × тариф.
+      `${row(labels.gas, record.gasPrev, record.gasCurr, usage.gasUsage, record.gasRate, round2(usage.gasUsage * record.gasRate))}
     ${record.gasDeliveryFee > 0
       ? `<tr>
       <th scope="row">${escapeHtml(labels.deliveryFee)}</th>

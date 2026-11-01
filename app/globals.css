@@ -1446,6 +1446,58 @@ a {
   }
 }
 
+/* ---------------------- animated gas icons (hero) ------------------------ */
+
+.rate-chip-gas svg {
+  color: #2f8dff;
+  width: 32px;
+  height: 32px;
+  transform-origin: 50% 85%;
+  animation: rate-flame-flicker 0.9s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 5px rgba(47, 141, 255, 0.55));
+}
+
+@keyframes rate-flame-flicker {
+  0% {
+    transform: scale(1) rotate(-2deg);
+  }
+  35% {
+    transform: scale(1.08) rotate(1.5deg);
+  }
+  70% {
+    transform: scale(0.95) rotate(-1deg);
+  }
+  100% {
+    transform: scale(1.05) rotate(2deg);
+  }
+}
+
+.rate-chip-truck svg {
+  width: 32px;
+  height: 32px;
+  color: var(--brand);
+  animation: rate-truck-drive 1.4s ease-in-out infinite;
+}
+
+@keyframes rate-truck-drive {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  25% {
+    transform: translateX(1.6px) translateY(-0.6px);
+  }
+  50% {
+    transform: translateX(-0.8px) translateY(0.4px);
+  }
+  75% {
+    transform: translateX(1.2px) translateY(-0.3px);
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+
 /* ------------------------------- rates ----------------------------------- */
 
 .rates-panel {

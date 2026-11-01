@@ -5,7 +5,6 @@ import { calculateUsage } from "@/lib/calc";
 import { parseBackup } from "@/lib/client/backup";
 import {
   downloadCsv,
-  downloadFile,
   downloadJson,
   readJsonFile,
   type BackupFile,
@@ -24,22 +23,19 @@ import {
   yearOf,
 } from "@/lib/format";
 import type { MeterRecord, MeterType, RecordDraft, Settings } from "@/lib/types";
-import {
-  buildReceiptHtml,
-  receiptFileName,
-  receiptLabels,
-} from "@/lib/receipt";
 import { History } from "./history";
 import { useI18n } from "./i18n-provider";
 import {
   BoltIcon,
   CloudIcon,
   DeviceIcon,
+  FlameIcon,
   FuelIcon,
   GearIcon,
   MoonIcon,
   ShieldIcon,
   SunIcon,
+  TruckIcon,
   WalletIcon,
 } from "./icons";
 import { LockScreen } from "./lock-screen";
@@ -180,10 +176,10 @@ export function AppShell({ meter }: { meter: MeterType }) {
   const markPaid = async (record: MeterRecord, paidOn: string) => {
     try {
       const updated = await store.setPaid(record.id, true, paidAtFromDate(paidOn));
-      const html = buildReceiptHtml(updated, locale, receiptLabels(t, updated));
-      downloadFile(receiptFileName(updated), html, "text/html;charset=utf-8");
+      // Квитанция не скачивается сама: пользователь сохраняет её кнопкой
+      // в открытом диалоге или позже из карточки записи.
       setReceiptRecord(updated);
-      notify(t("receipt.saved", { month: monthLabel(updated.period, locale) }));
+      notify(t("toast.paid", { month: monthLabel(updated.period, locale) }));
     } catch (cause) {
       notify(cause instanceof Error ? cause.message : t("toast.paidError"), "error");
     }
@@ -479,11 +475,11 @@ export function AppShell({ meter }: { meter: MeterType }) {
                 {isGas ? (
                   <>
                     <span className="rate-chip rate-chip-gas">
-                      <FuelIcon width={16} height={16} />
+                      <FlameIcon width={16} height={16} />
                       {t("common.gas")} <b>{formatNumber(store.settings.gasRate, locale)} ₴</b>
                     </span>
-                    <span className="rate-chip rate-chip-day">
-                      <WalletIcon width={16} height={16} />
+                    <span className="rate-chip rate-chip-truck">
+                      <TruckIcon width={16} height={16} />
                       {t("settings.gasDeliveryLabel").replace(/,.*$/, "")}{" "}
                       <b>{formatNumber(store.settings.gasDeliveryFee, locale)} ₴</b>
                     </span>
@@ -595,7 +591,7 @@ export function AppShell({ meter }: { meter: MeterType }) {
                   </div>
                   <div className="side-rate side-rate-gas">
                     <span className="tariff-icon tariff-gas">
-                      <FuelIcon width={18} height={18} />
+                      <FlameIcon width={18} height={18} />
                     </span>
                     <div>
                       <span>{t("common.gas")}</span>
@@ -605,7 +601,7 @@ export function AppShell({ meter }: { meter: MeterType }) {
                   </div>
                   <div className="side-rate side-rate-gas">
                     <span className="tariff-icon tariff-gas">
-                      <WalletIcon width={18} height={18} />
+                      <TruckIcon width={18} height={18} />
                     </span>
                     <div>
                       <span>{t("receipt.deliveryFee")}</span>

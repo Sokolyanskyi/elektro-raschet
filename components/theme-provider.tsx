@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import {
   THEME_META,
   detectTheme,
@@ -41,6 +42,7 @@ function readInitialTheme(): ThemeId {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>(readInitialTheme);
+  const pathname = usePathname();
   const firstRun = useRef(true);
 
   useEffect(() => {
@@ -50,8 +52,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.dataset.theme = theme;
     root.style.colorScheme = meta.scheme;
 
-    const themeColor = document.querySelector('meta[name="theme-color"]');
-    if (themeColor) themeColor.setAttribute("content", meta.barColor);
+    // Next.js восстанавливает head из layout при клиентских переходах между
+    // страницами, и динамический theme-color мог потеряться — актуализируем
+    // мета-тег на каждой смене маршрута и каждой смене темы.
+    const applyThemeColor = () => {
+      let tag = document.querySelector('meta[name="theme-color"]');
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute("name", "theme-color");
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", meta.barColor);
+    };
+    applyThemeColor();
 
     // No colour transition on the very first render — the scheme was already
     // painted correctly by the inline script.
@@ -67,7 +80,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.classList.remove("theme-switching");
     }, 460);
     return () => window.clearTimeout(timer);
-  }, [theme]);
+  }, [theme, pathname]);
 
   const setTheme = useCallback((next: ThemeId) => {
     setThemeState(next);

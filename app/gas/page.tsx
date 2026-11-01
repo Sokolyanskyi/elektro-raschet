@@ -1,10 +1,8 @@
-import type { Metadata } from "next";
 import { AppShell } from "@/components/app-shell";
 
-export const metadata: Metadata = {
-  title: "Gas — meter readings & payments",
-};
-
+// Свою metadata не экспортируем: любой page-level metadata на клиентском
+// переходе заставляет Next заново применить head корневого layout, из-за чего
+// сбрасывался динамический theme-color (в PWA статус-бар мигал белым).
 export default function GasPage() {
   return <AppShell meter="gas" />;
 }

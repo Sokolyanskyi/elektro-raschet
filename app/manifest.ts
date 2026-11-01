@@ -9,8 +9,10 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     orientation: "portrait-primary",
-    background_color: "#f3f5fb",
-    theme_color: "#1e1b4b",
+    // Стартовый цвет статус-бара: тёмная «Полночь» (по умолчанию для тёмной
+    // системы) — светлую схему провайдер темы переключит динамически.
+    background_color: "#080d1a",
+    theme_color: "#080d1a",
     lang: "en",
     categories: ["utilities", "finance"],
     icons: [
