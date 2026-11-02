@@ -20,17 +20,20 @@ and the amount due. The history of calculations and payments is kept for years.
   be changed in Settings or directly in the calculation form.
 - **Instant calculation.** Day usage, night usage, the total amount, and the
   day/night breakdown update as you type.
-- **Gas billing.** The same calculator flow for gas: readings in m³, gas tariff per
-  m³, and a monthly delivery fee. The electricity and gas amounts are combined into
-  one total, the history and receipts include the gas part, and the gas tab shows the
-  gas-only breakdown.
+- **Gas billing.** A dedicated Gas page (`/gas`) with the same calculator flow:
+  readings in m³, gas tariff per m³, and a monthly delivery fee. Gas keeps its own
+  history, year chart, payment marks, and receipts (GR-…), fully separate from the
+  electricity page — one month may hold a record of each type. Older records that
+  stored gas together with electricity are migrated automatically on first load:
+  the gas part becomes a separate gas record. Switch pages via the Electricity/Gas
+  navigation under the header.
 - **Reading entry date.** Saved together with every calculation.
 - **Payment date and receipt.** Pick the actual payment date, confirm the payment, and
-  the app saves the bill and generates an electronic receipt. The receipt is downloaded
-  automatically and can be reopened from the month details or the record card, then
-  downloaded again or printed to PDF. A paid record stays paid: you can correct its
-  payment date and day/night readings at any time, but deleting it requires
-  “Cancel payment” first.
+  the app marks the bill as paid and opens the receipt. The file is **not** downloaded
+  automatically — save it with the “Download receipt” button (or print to PDF) and
+  reopen it any time from the month details or the record card. A paid record stays
+  paid: you can correct its payment date and readings at any time, but deleting it
+  requires “Cancel payment” first.
 - **Multi-year history.** Filter by year and see yearly totals (usage, charged, paid,
   debt). The monthly charges chart is interactive: tap a bar to inspect that month’s
   usage, amount, payment status, day/night split, and receipt. Records are never removed
