@@ -16,7 +16,7 @@ import type { MeterRecord } from "@/lib/types";
 import { useI18n } from "./i18n-provider";
 import {
   CheckIcon,
-  FuelIcon,
+  FlameIcon,
   MoonIcon,
   PencilIcon,
   ReceiptIcon,
@@ -93,7 +93,7 @@ export function RecordCard({
             <>
               <div className="breakdown-chip">
                 <span className="breakdown-name">
-                  <FuelIcon width={14} height={14} />
+                  <FlameIcon width={14} height={14} />
                   {t("common.gas")}
                 </span>
                 <span className="breakdown-calc">

@@ -13,7 +13,7 @@ import {
 } from "@/lib/format";
 import type { MeterRecord, MeterType } from "@/lib/types";
 import { useI18n } from "./i18n-provider";
-import { ChartIcon, FuelIcon, MoonIcon, PlusIcon, ReceiptIcon, SunIcon } from "./icons";
+import { ChartIcon, FlameIcon, MoonIcon, PlusIcon, ReceiptIcon, SunIcon } from "./icons";
 import { RecordCard } from "./record-card";
 
 interface HistoryProps {
@@ -273,7 +273,7 @@ export function History({
                   <div className="chart-detail-split">
                     {isGas ? (
                       <span>
-                        <FuelIcon width={13} height={13} />
+                        <FlameIcon width={13} height={13} />
                         {t("common.gas")} · {formatM3(selectedUsage.gasUsage, locale)} ·{" "}
                         {formatMoney(selectedUsage.gasCost, locale)}
                       </span>
@@ -291,7 +291,7 @@ export function History({
                         </span>
                         {selectedUsage.gasUsage > 0 || selectedRecord.gasDeliveryFee > 0 ? (
                           <span>
-                            <FuelIcon width={13} height={13} />
+                            <FlameIcon width={13} height={13} />
                             {t("common.gas")} · {formatM3(selectedUsage.gasUsage, locale)} ·{" "}
                             {formatMoney(selectedUsage.gasCost, locale)}
                           </span>

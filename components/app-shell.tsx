@@ -30,7 +30,6 @@ import {
   CloudIcon,
   DeviceIcon,
   FlameIcon,
-  FuelIcon,
   GearIcon,
   MoonIcon,
   ShieldIcon,
@@ -432,7 +431,7 @@ export function AppShell({ meter }: { meter: MeterType }) {
         <header className="topbar">
           <a className="brand" href="#top" aria-label={t("app.home")}>
             <span className="brand-mark">
-              {isGas ? <FuelIcon width={20} height={20} /> : <BoltIcon width={20} height={20} />}
+              {isGas ? <FlameIcon width={20} height={20} /> : <BoltIcon width={20} height={20} />}
             </span>
             <span className="brand-text">
               <b>{t("app.name")}</b>
@@ -688,7 +687,7 @@ export function AppShell({ meter }: { meter: MeterType }) {
               ) : (
                 <div className="card side-card side-empty">
                   <span className="side-empty-icon">
-                    {isGas ? <FuelIcon width={20} height={20} /> : <BoltIcon width={20} height={20} />}
+                    {isGas ? <FlameIcon width={20} height={20} /> : <BoltIcon width={20} height={20} />}
                   </span>
                   <b>{t("side.emptyTitle")}</b>
                   <p>{t("side.emptyText")}</p>
@@ -734,7 +733,7 @@ export function AppShell({ meter }: { meter: MeterType }) {
 
         <footer className="footer">
           <div>
-            {isGas ? <FuelIcon width={15} height={15} /> : <BoltIcon width={15} height={15} />}
+            {isGas ? <FlameIcon width={15} height={15} /> : <BoltIcon width={15} height={15} />}
             <span>
               {isGas
                 ? t("footer.summaryGas", {

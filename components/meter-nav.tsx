@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "./i18n-provider";
-import { BoltIcon, FuelIcon } from "./icons";
+import { BoltIcon, FlameIcon } from "./icons";
 
 /** Переключатель страниц счётчиков: электроэнергия и газ. */
 export function MeterNav() {
@@ -26,7 +26,7 @@ export function MeterNav() {
         className={`meter-nav-tab ${gasActive ? "is-active" : ""}`}
         aria-current={gasActive ? "page" : undefined}
       >
-        <FuelIcon width={15} height={15} />
+        <FlameIcon width={15} height={15} />
         {t("form.tabGas")}
       </Link>
     </nav>

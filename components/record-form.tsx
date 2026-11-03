@@ -28,7 +28,6 @@ import {
   CheckIcon,
   ChevronDownIcon,
   FlameIcon,
-  FuelIcon,
   MoonIcon,
   SunIcon,
   TruckIcon,
@@ -366,7 +365,7 @@ export function RecordForm({
           </h2>
         </div>
         <span className="soft-badge">
-          {isGas ? <FuelIcon width={14} height={14} /> : <BoltIcon width={14} height={14} />}
+          {isGas ? <FlameIcon width={14} height={14} /> : <BoltIcon width={14} height={14} />}
           {monthLabel(period, locale)}
         </span>
       </div>
@@ -419,7 +418,7 @@ export function RecordForm({
 
         {prefillSource && !editing ? (
           <div className="prefill-hint">
-            {isGas ? <FuelIcon width={14} height={14} /> : <BoltIcon width={14} height={14} />}
+            {isGas ? <FlameIcon width={14} height={14} /> : <BoltIcon width={14} height={14} />}
             {t("form.prefill", { month: monthLabel(prefillSource, locale) })}
           </div>
         ) : null}
