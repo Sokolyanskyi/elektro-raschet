@@ -3270,6 +3270,38 @@ a {
   text-align: center;
   color: var(--muted);
   font-size: 12.5px;
+  /* Всегда тёмный фон — совпадает с background_color манифеста и системным
+     сплешем Android, поэтому переход системный сплеш → boot-экран бесшовный. */
+  background: #080d1a;
+}
+
+.boot-splash {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .boot-splash {
+    display: block;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .boot-mark {
+    display: none;
+  }
+
+  .boot {
+    justify-content: flex-end;
+    padding-bottom: 56px;
+  }
+
+  .boot p {
+    position: relative;
+    color: rgba(255, 255, 255, 0.75);
+  }
 }
 
 .boot-card {

@@ -346,7 +346,11 @@ export function AppShell({ meter }: { meter: MeterType }) {
   if (store.mode === "loading") {
     return (
       <div className="boot">
-        <span className="brand-mark brand-mark-lg">
+        {/* На телефоне — полноэкранная картинка: визуально продолжает системный
+            сплеш Android (та же иконка, тот же фон), размером которого нельзя
+            управлять из манифеста. Иконка уже в precache SW — офлайн-старт мгновенный. */}
+        <img src="/icon-512.png" alt="" aria-hidden="true" className="boot-splash" />
+        <span className="brand-mark brand-mark-lg boot-mark">
           <BoltIcon width={26} height={26} />
         </span>
         <p>{t("boot.loading")}</p>
