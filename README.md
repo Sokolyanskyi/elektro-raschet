@@ -12,8 +12,6 @@ and the amount due. The history of calculations and payments is kept for years.
 > Seven colour schemes are available as well. All screenshots and the repository
 > description use the English interface.
 
-![Calculation and payment history](docs/screenshot-desktop.png)
-
 ## Features
 
 - **Two tariffs.** Defaults are 4.60 ₴/kWh for day and 2.30 ₴/kWh for night. Rates can
@@ -64,10 +62,6 @@ and the amount due. The history of calculations and payments is kept for years.
 - **Accessible by design.** Labelled fields, keyboard-friendly dialogs, visible focus
   states, `role`/`aria` attributes on tabs, language and colour-scheme choices, and
   full `prefers-reduced-motion` support.
-
-<p align="center">
-  <img src="docs/screenshot-mobile.png" alt="Mobile layout" width="320" />
-</p>
 
 ## Receipts
 
