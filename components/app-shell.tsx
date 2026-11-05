@@ -26,6 +26,7 @@ import type { MeterRecord, MeterType, RecordDraft, Settings } from "@/lib/types"
 import { History } from "./history";
 import { useI18n } from "./i18n-provider";
 import {
+  ArrowUpIcon,
   BoltIcon,
   CloudIcon,
   DeviceIcon,
@@ -43,6 +44,7 @@ import { ConfirmDialog } from "./modal";
 import { RecordForm } from "./record-form";
 import { ReceiptDialog } from "./receipt-dialog";
 import { SettingsDialog } from "./settings-dialog";
+import { useRecordsStore } from "./records-provider";
 
 type ConfirmState =
   | { kind: "delete"; record: MeterRecord }
@@ -62,7 +64,9 @@ interface ToastState {
 
 export function AppShell({ meter }: { meter: MeterType }) {
   const { locale, t } = useI18n();
-  const store = useRecords();
+  // Store общий для обеих вкладок (живёт в layout): переход «Электричество ↔
+  // Газ» не перезапрашивает данные и не показывает boot-заставку заново.
+  const store = useRecordsStore();
   const isGas = meter === "gas";
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | "all">(new Date().getFullYear());
@@ -71,6 +75,7 @@ export function AppShell({ meter }: { meter: MeterType }) {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [receiptRecord, setReceiptRecord] = useState<MeterRecord | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [showTop, setShowTop] = useState(false);
   const initialYearApplied = useRef(false);
 
   const notify = useCallback((message: string, tone: "success" | "error" = "success") => {
@@ -88,6 +93,46 @@ export function AppShell({ meter }: { meter: MeterType }) {
       notify(store.error, "error");
     }
   }, [store.mode, store.error, notify]);
+
+  // Заголовок вкладки браузера подстраивается под активный счётчик и язык.
+  // Прямая запись в document.title (а не page-level metadata): она не трогает
+  // head-менеджер Next, поэтому динамический theme-color PWA не сбрасывается.
+  // Next применяет head layout уже после эффектов — поэтому следим за <title>
+  // через MutationObserver и возвращаем нужное значение, если его перезаписали.
+  useEffect(() => {
+    const desired = isGas ? t("form.tabGas") : t("app.name");
+    const apply = () => {
+      if (document.title !== desired) document.title = desired;
+    };
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, [isGas, t]);
+
+  // Кнопка «Наверх» появляется, когда история прокручена достаточно далеко.
+  useEffect(() => {
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        const next = window.scrollY > 600;
+        setShowTop((previous) => (previous === next ? previous : next));
+      });
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+  }, []);
 
   // Записи этого счётчика: электро и газ живут в одном хранилище,
   // каждая страница работает только со своим типом.
@@ -344,15 +389,28 @@ export function AppShell({ meter }: { meter: MeterType }) {
 
   if (store.mode === "loading") {
     return (
-      <div className="boot">
-        {/* На телефоне — полноэкранная картинка: визуально продолжает системный
-            сплеш Android (та же иконка, тот же фон), размером которого нельзя
-            управлять из манифеста. Иконка уже в precache SW — офлайн-старт мгновенный. */}
-        <img src="/icon-512.png" alt="" aria-hidden="true" className="boot-splash" />
-        <span className="brand-mark brand-mark-lg boot-mark">
-          <BoltIcon width={26} height={26} />
-        </span>
-        <p>{t("boot.loading")}</p>
+      <div className="boot" role="status" aria-live="polite">
+        {/* Тёмный фон совпадает с background_color манифеста и системным сплешем
+            Android, поэтому переход системный сплеш → boot-экран бесшовный.
+            Показывается только на холодном старте: между вкладками store общий. */}
+        <div className="boot-scene">
+          <span className="boot-glow" aria-hidden="true" />
+          <div className="boot-lockup">
+            <span className="boot-orbit" aria-hidden="true" />
+            <span className="brand-mark brand-mark-lg boot-mark">
+              <BoltIcon width={28} height={28} />
+            </span>
+          </div>
+          <b className="boot-name">{t("app.name")}</b>
+          <p className="boot-status">
+            {t("boot.loading")}
+            <span className="boot-dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </p>
+        </div>
       </div>
     );
   }
@@ -427,6 +485,9 @@ export function AppShell({ meter }: { meter: MeterType }) {
 
   return (
     <>
+      {/* Тонкая «подложка»-полоса сверху: показывает фоновую активность
+          с облаком (сохранение, оплата, импорт) на медленной сети. */}
+      {store.busy ? <div className="busy-bar" aria-hidden="true" /> : null}
       <div className="page" id="top">
         <header className="topbar">
           <a className="brand" href="#top" aria-label={t("app.home")}>
@@ -434,8 +495,14 @@ export function AppShell({ meter }: { meter: MeterType }) {
               {isGas ? <FlameIcon width={20} height={20} /> : <BoltIcon width={20} height={20} />}
             </span>
             <span className="brand-text">
-              <b>{t("app.name")}</b>
-              <small>{t("app.tagline")}</small>
+              <b>{isGas ? t("form.tabGas") : t("app.name")}</b>
+              <small>
+                {isGas
+                  ? t("footer.summaryGas", {
+                      gas: formatNumber(store.settings.gasRate, locale),
+                    })
+                  : t("app.tagline")}
+              </small>
             </span>
           </a>
 
@@ -801,6 +868,16 @@ export function AppShell({ meter }: { meter: MeterType }) {
           {toast.message}
         </div>
       ) : null}
+
+      <button
+        type="button"
+        className={`to-top ${showTop ? "is-visible" : ""}`}
+        aria-label={t("nav.toTop")}
+        tabIndex={showTop ? 0 : -1}
+        onClick={scrollToTop}
+      >
+        <ArrowUpIcon width={18} height={18} />
+      </button>
     </>
   );
 }

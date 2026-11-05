@@ -366,6 +366,7 @@ const ru = {
 
   "common.m3": "м³",
   "nav.meterLabel": "Тип счётчика",
+  "nav.toTop": "Наверх",
   "heroGas.title1": "Газ посчитан.",
   "heroGas.title2": "История сохранена.",
   "heroGas.subtitle":
@@ -748,6 +749,7 @@ const uk: Record<MessageKey, string> = {
 
   "common.m3": "м³",
   "nav.meterLabel": "Тип лічильника",
+  "nav.toTop": "Догори",
   "heroGas.title1": "Газ пораховано.",
   "heroGas.title2": "Історія збережена.",
   "heroGas.subtitle":
@@ -1127,6 +1129,7 @@ const en: Record<MessageKey, string> = {
 
   "common.m3": "m³",
   "nav.meterLabel": "Meter type",
+  "nav.toTop": "Back to top",
   "heroGas.title1": "Gas calculated.",
   "heroGas.title2": "History kept.",
   "heroGas.subtitle":
@@ -1507,6 +1510,7 @@ const pl: Record<MessageKey, string> = {
 
   "common.m3": "m³",
   "nav.meterLabel": "Typ licznika",
+  "nav.toTop": "Na górę",
   "heroGas.title1": "Gaz policzony.",
   "heroGas.title2": "Historia zapisana.",
   "heroGas.subtitle":
@@ -1858,6 +1862,7 @@ const zh: Record<MessageKey, string> = {
 
   "common.m3": "立方米",
   "nav.meterLabel": "表计类型",
+  "nav.toTop": "回到顶部",
   "heroGas.title1": "燃气已算好。",
   "heroGas.title2": "历史已保存。",
   "heroGas.subtitle":

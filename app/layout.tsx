@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { I18nProvider } from "@/components/i18n-provider";
+import { RecordsProvider } from "@/components/records-provider";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { ThemeProvider } from "@/components/theme-provider";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
@@ -46,7 +47,9 @@ export default function RootLayout({
       <body>
         <ServiceWorkerRegister />
         <ThemeProvider>
-          <I18nProvider>{children}</I18nProvider>
+          <I18nProvider>
+            <RecordsProvider>{children}</RecordsProvider>
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

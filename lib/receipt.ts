@@ -63,7 +63,8 @@ export function receiptFileName(record: MeterRecord): string {
  */
 export function receiptLabels(translate: Translate, record: MeterRecord): ReceiptLabels {
   return {
-    appName: translate("app.name"),
+    // В шапке документа — имя счётчика (электричество/газ), а не общее имя приложения.
+    appName: record.type === "gas" ? translate("form.tabGas") : translate("app.name"),
     title: translate("receipt.title"),
     subtitle:
       record.type === "gas"
@@ -121,6 +122,17 @@ export function buildReceiptHtml(
   );
   const note = record.note?.trim() ? escapeHtml(record.note.trim()) : "";
   const unit = escapeHtml(isGas ? labels.m3 : labels.kwh);
+  // Плашка бренда квитанции повторяет иконку счётчика: пламя (газ) или молния.
+  const markStyle = isGas
+    ? "background: linear-gradient(145deg, #2f8dff, #1d5fd2);"
+    : "background: linear-gradient(145deg, #5b5bf0, #7d5cf5);";
+  const markIcon = isGas
+    ? `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5Z"/>
+          </svg>`
+    : `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+            <path d="M13.5 2 4.8 13.2c-.3.4 0 .9.5.9h5.1l-1.2 7.3c-.1.6.7 1 1.1.5l8.9-11.4c.3-.4 0-.9-.5-.9h-5.3l1.3-6.7c.1-.6-.7-.9-1.2-.4Z"/>
+          </svg>`;
 
   const row = (name: string, prev: number, curr: number, used: number, rate: number, cost: number) => `
     <tr>
@@ -237,10 +249,8 @@ export function buildReceiptHtml(
   <main class="receipt">
     <div class="top">
       <div class="brand">
-        <span class="mark" aria-hidden="true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M13.2 2 4.8 13.4h6L10.8 22l8.4-11.4h-6L13.2 2Z" fill="currentColor"/>
-          </svg>
+        <span class="mark" style="${markStyle}" aria-hidden="true">
+          ${markIcon}
         </span>
         <span>
           <b>${escapeHtml(labels.appName)}</b>

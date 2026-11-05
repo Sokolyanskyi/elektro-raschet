@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { calculateUsage } from "@/lib/calc";
 import {
   formatDate,
@@ -51,6 +52,15 @@ export function History({
 }: HistoryProps) {
   const { locale, t } = useI18n();
   const isGas = meter === "gas";
+  // Расчёт одной записи нужен сразу в нескольких местах (график, итоги года,
+  // группы карточек) — считаем его один раз на запись, а не на каждое упоминание.
+  const usages = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof calculateUsage>>();
+    for (const record of records) map.set(record.id, calculateUsage(record));
+    return map;
+  }, [records]);
+  const usageOf = (record: MeterRecord) =>
+    usages.get(record.id) ?? calculateUsage(record);
   const years = Array.from(new Set(records.map((record) => yearOf(record.period))));
   if (!years.includes(currentYear)) years.push(currentYear);
   years.sort((a, b) => b - a);
@@ -62,7 +72,7 @@ export function History({
 
   const totals = filtered.reduce(
     (accumulator, record) => {
-      const usage = calculateUsage(record);
+      const usage = usageOf(record);
       accumulator.usage += usage.totalUsage;
       accumulator.total += usage.total;
       if (record.paid) accumulator.paid += usage.total;
@@ -79,7 +89,7 @@ export function History({
     for (const record of records) {
       if (yearOf(record.period) === chartYear) {
         const month = Number(record.period.slice(5, 7));
-        monthly[month - 1] += calculateUsage(record).total;
+        monthly[month - 1] += usageOf(record).total;
         monthlyRecords[month - 1] = record;
       }
     }
@@ -89,7 +99,7 @@ export function History({
   const selectedRecord = selectedMonth
     ? records.find((record) => record.period === selectedMonth) ?? null
     : null;
-  const selectedUsage = selectedRecord ? calculateUsage(selectedRecord) : null;
+  const selectedUsage = selectedRecord ? usageOf(selectedRecord) : null;
 
   const groups: Array<{ year: number; records: MeterRecord[] }> = [];
   for (const record of filtered) {
@@ -182,8 +192,8 @@ export function History({
                   const detail = monthRecord
                     ? `${monthLabel(monthRecord.period, locale)}: ${
                         isGas
-                          ? formatM3(calculateUsage(monthRecord).totalUsage, locale)
-                          : formatKwh(calculateUsage(monthRecord).totalUsage, locale)
+                          ? formatM3(usageOf(monthRecord).totalUsage, locale)
+                          : formatKwh(usageOf(monthRecord).totalUsage, locale)
                       }, ${formatMoney(value, locale)}`
                     : label;
                   return (
@@ -345,7 +355,7 @@ export function History({
                     <span>
                       {formatMoney(
                         group.records.reduce(
-                          (sum, record) => sum + calculateUsage(record).total,
+                          (sum, record) => sum + usageOf(record).total,
                           0,
                         ),
                         locale,
