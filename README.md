@@ -26,7 +26,9 @@ and the amount due. The history of calculations and payments is kept for years.
   electricity page — one month may hold a record of each type. Older records that
   stored gas together with electricity are migrated automatically on first load:
   the gas part becomes a separate gas record. Switch pages via the Electricity/Gas
-  navigation under the header.
+  navigation under the header — it stays visible while scrolling on mobile, and both
+  pages share one data store, so switching is instant with no loading screens. The
+  topbar brand and the browser tab title follow the active meter.
 - **Reading entry date.** Saved together with every calculation.
 - **Payment date and receipt.** Pick the actual payment date, confirm the payment, and
   the app marks the bill as paid and opens the receipt. The file is **not** downloaded
@@ -46,6 +48,11 @@ and the amount due. The history of calculations and payments is kept for years.
   it was saved, so old amounts never change retroactively. New records use the
   current default rates.
 - **Installable on a phone.** PWA manifest and icons; add it to the home screen.
+  A cold start shows a short animated splash (pulsing logo, orbiting ring) on the
+  same dark background as the system launch screen, so the handoff is seamless.
+- **Quiet progress feedback.** Cloud saves, payments, and imports show a slim
+  indeterminate bar along the top edge instead of blocking dialogs, and a floating
+  back-to-top button appears when the history is scrolled deep.
 - **Seven colour schemes.** Classic, Sky, Emerald, Sunset, Rose, Midnight, and
   Graphite — five light and two dark palettes, picked in Settings. The choice is
   remembered on the device and applied before the first paint, so a dark scheme never
@@ -65,9 +72,10 @@ and the amount due. The history of calculations and payments is kept for years.
 ## Receipts
 
 Every payment produces an electronic receipt with the billing month, payment date,
-day/night readings, tariff rates, and the amount paid. The HTML file is saved
-automatically; it can also be reopened from the history, downloaded again, or printed
-to PDF.
+day/night (or gas) readings, tariff rates, and the amount paid. The receipt never
+interrupts you: it opens on demand from the month details or the record card, and
+from there it can be downloaded as HTML or printed to PDF. Electricity receipts
+carry a bolt mark and an ER- number; gas receipts a flame mark and a GR- number.
 
 <p align="center">
   <img src="docs/screenshot-receipt.png" alt="Electronic payment receipt" width="760" />
